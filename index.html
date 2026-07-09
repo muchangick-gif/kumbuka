@@ -8,115 +8,60 @@
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root { color-scheme: dark; }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0a0908;
-            transition: background-color 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            background-color: #0a0a0b;
         }
 
         .font-display { font-family: 'Big Shoulders Display', 'Plus Jakarta Sans', sans-serif; }
-        .font-record { font-family: 'IBM Plex Mono', monospace; }
-
-        /* Archival paper-grain overlay, sits above the flat background color */
-        .grain {
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            opacity: 0.05;
-            mix-blend-mode: overlay;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        }
 
         .ambient-glow {
             position: fixed;
-            top: 40%;
+            top: 38%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 900px;
-            height: 900px;
+            width: 1100px;
+            height: 1100px;
             z-index: 0;
             pointer-events: none;
-            transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: background 1s ease;
         }
 
-        .glow-default  { background: radial-gradient(circle, rgba(255,255,255,0.025) 0%, rgba(0,0,0,0) 65%); }
-        .glow-yes      { background: radial-gradient(circle, rgba(220,38,38,0.20) 0%, rgba(220,38,38,0.03) 45%, rgba(0,0,0,0) 68%); }
-        .glow-no       { background: radial-gradient(circle, rgba(16,163,90,0.16) 0%, rgba(16,163,90,0.02) 45%, rgba(0,0,0,0) 68%); }
-        .glow-absent   { background: radial-gradient(circle, rgba(217,155,29,0.12) 0%, rgba(217,155,29,0.02) 45%, rgba(0,0,0,0) 68%); }
+        .glow-default  { background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 60%); }
+        .glow-yes      { background: radial-gradient(circle, rgba(255,59,48,0.10) 0%, rgba(0,0,0,0) 60%); }
+        .glow-no       { background: radial-gradient(circle, rgba(48,209,88,0.08) 0%, rgba(0,0,0,0) 60%); }
+        .glow-absent   { background: radial-gradient(circle, rgba(255,159,10,0.07) 0%, rgba(0,0,0,0) 60%); }
 
-        .ledger-card {
-            background: rgba(16, 15, 13, 0.65);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
+        .search-shell {
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
-        .ledger-card:focus-within {
+        .search-shell:focus-within {
+            background: rgba(255, 255, 255, 0.07);
             border-color: rgba(255, 255, 255, 0.14);
-            box-shadow: 0 0 60px rgba(255, 255, 255, 0.03);
         }
         input:focus { outline: none; }
 
-        /* Rubber-stamp frame used on the status badge for a struck-record look */
-        .stamp-frame {
-            position: relative;
-            border-width: 1.5px;
-            border-style: solid;
-        }
-        .stamp-frame::after {
-            content: "";
-            position: absolute;
-            inset: -4px;
-            border: 1px solid currentColor;
-            opacity: 0.35;
-            border-radius: inherit;
-            transform: rotate(1.2deg);
-            pointer-events: none;
-        }
-
         .verdict-word {
             font-family: 'Big Shoulders Display', sans-serif;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            line-height: 0.85;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            line-height: 0.9;
+            animation: verdictRise 0.45s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .verdict-yes {
-            color: #ef4444;
-            transform: rotate(-2.5deg);
-            text-shadow: 3px 3px 0 rgba(220,38,38,0.35), -1px -1px 0 rgba(220,38,38,0.15);
-            animation: stampImpact 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .verdict-no {
-            color: #34d399;
-            animation: verdictRise 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .verdict-absent {
-            color: #d99b1d;
-            opacity: 0.92;
-            animation: verdictRise 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+        .verdict-yes    { color: #ff453a; }
+        .verdict-no     { color: #32d74b; }
+        .verdict-absent { color: #ff9f0a; }
 
-        @keyframes stampImpact {
-            0%   { transform: scale(1.2) rotate(-7deg); opacity: 0; }
-            55%  { transform: scale(0.96) rotate(-1deg); opacity: 1; }
-            100% { transform: scale(1) rotate(-2.5deg); opacity: 1; }
-        }
         @keyframes verdictRise {
-            0%   { transform: translateY(10px); opacity: 0; }
+            0%   { transform: translateY(8px); opacity: 0; }
             100% { transform: translateY(0); opacity: 1; }
-        }
-
-        .flash-yes { animation: flashRed 0.45s ease-out; }
-        @keyframes flashRed {
-            0%   { background-color: rgba(220,38,38,0.22); }
-            100% { background-color: transparent; }
         }
 
         .fade-slide {
@@ -124,80 +69,57 @@
         }
     </style>
 </head>
-<body id="app-wrapper" class="text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-red-500/20 relative">
+<body id="app-wrapper" class="text-zinc-100 min-h-screen flex flex-col items-center justify-center selection:bg-red-500/20 relative px-6">
 
-    <div class="grain"></div>
     <div id="glow-field" class="ambient-glow glow-default"></div>
 
-    <header class="w-full max-w-7xl mx-auto px-6 sm:px-8 py-8 flex justify-between items-center z-10 gap-4">
-        <div class="font-record text-[10px] tracking-[0.35em] uppercase text-zinc-500">Kumbuka Archive</div>
-        <div id="tally-line" class="font-record text-[10px] tracking-[0.2em] uppercase text-zinc-500 text-right"></div>
-    </header>
+    <main class="w-full max-w-lg z-10 -mt-8">
 
-    <main class="w-full max-w-2xl mx-auto px-6 py-8 flex-grow flex flex-col justify-center z-10">
-
-        <div class="text-center mb-10">
-            <h1 class="font-display text-5xl sm:text-6xl font-black tracking-tight mb-3 bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent uppercase">
+        <div class="text-center mb-9">
+            <h1 class="font-display text-5xl sm:text-6xl font-bold tracking-tight mb-3 text-white uppercase">
                 The Streets Never Forget.
             </h1>
-            <p class="text-zinc-500 text-xs tracking-widest uppercase font-record">
-                Public Accountability Index · Finance Bill Division Record
+            <p class="text-zinc-500 text-base">
+                How did your MP vote on the Finance Bill?
             </p>
         </div>
 
-        <div class="ledger-card rounded-2xl p-1.5 mb-3">
+        <div class="search-shell rounded-full flex items-center gap-3 px-5 py-4 mb-8">
+            <svg class="w-4 h-4 text-zinc-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="7"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
             <input
                 type="text"
                 id="search-input"
                 autocomplete="off"
                 spellcheck="false"
-                placeholder="Name, constituency, county — or try &lsquo;yes votes in Nakuru&rsquo;"
-                class="w-full px-6 py-5 rounded-xl bg-black/20 text-white placeholder-zinc-600 text-lg sm:text-xl font-medium tracking-wide border border-transparent"
+                placeholder="Search a name, constituency or county"
+                class="w-full bg-transparent text-white placeholder-zinc-500 text-base sm:text-lg font-medium border-0"
             >
         </div>
-        <p class="text-center text-zinc-600 text-[10px] font-record tracking-[0.15em] uppercase mb-10">
-            Fuzzy name search · plain-language filters · full division roll call
-        </p>
 
         <!-- Idle state -->
         <div id="idle-state" class="text-center fade-slide opacity-100">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-record uppercase tracking-[0.2em] bg-zinc-900/60 border border-zinc-800 text-zinc-500">
-                <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
-                Awaiting Query
-            </div>
+            <p id="idle-tally" class="text-zinc-600 text-sm"></p>
         </div>
 
         <!-- Hero verdict (always exactly one match shown) -->
         <div id="hero-panel" class="text-center fade-slide opacity-0 translate-y-4 pointer-events-none hidden">
-            <div id="status-badge" class="stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-zinc-900/60 border-zinc-800 text-zinc-400">
-                <span id="badge-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
-                <span id="badge-label">Confirmed</span>
-            </div>
+            <h2 id="vote-decision" class="verdict-word text-7xl sm:text-8xl uppercase mb-5"></h2>
 
-            <h2 id="vote-decision" class="verdict-word text-7xl sm:text-8xl uppercase mb-6"></h2>
-
-            <div class="mt-2">
-                <p id="mp-name" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white"></p>
-                <p id="mp-location" class="text-xs font-record tracking-[0.2em] text-zinc-500 uppercase mt-2"></p>
-                <p id="mp-subtext" class="text-sm text-zinc-500 mt-4 max-w-sm mx-auto"></p>
-                <p id="mp-context" class="text-[10px] font-record tracking-[0.15em] text-zinc-600 uppercase mt-5"></p>
-            </div>
+            <p id="mp-name" class="text-2xl sm:text-3xl font-bold tracking-tight text-white"></p>
+            <p id="mp-location" class="text-sm text-zinc-500 mt-1"></p>
+            <p id="mp-subtext" class="text-sm text-zinc-500 mt-5 max-w-sm mx-auto"></p>
+            <p id="mp-context" class="text-xs text-zinc-600 mt-4"></p>
         </div>
 
         <!-- No matches -->
         <div id="empty-state" class="text-center fade-slide opacity-0 translate-y-4 pointer-events-none hidden">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-record uppercase tracking-[0.2em] bg-zinc-900/60 border border-zinc-800 text-zinc-500 mb-4">
-                <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
-                No Record Found
-            </div>
-            <p class="text-zinc-600 text-sm">No MP, constituency or county matches that query.</p>
+            <p class="text-zinc-500 text-base">No record matches that.</p>
         </div>
 
     </main>
-
-    <footer class="w-full max-w-7xl mx-auto px-8 py-8 text-center text-[9px] font-record tracking-[0.3em] text-zinc-700 uppercase z-10">
-        Public Record Ledger · Sourced via Cross-Verified Division Roll Call
-    </footer>
 
     <script>
         // Parliamentary division record — deduplicated 2026-07-09 (5 duplicate/artifact rows removed)
@@ -574,7 +496,7 @@
         const searchInput   = document.getElementById('search-input');
         const appWrapper    = document.getElementById('app-wrapper');
         const glowField     = document.getElementById('glow-field');
-        const tallyLine      = document.getElementById('tally-line');
+        const idleTally      = document.getElementById('idle-tally');
 
         const idleState      = document.getElementById('idle-state');
         const heroPanel       = document.getElementById('hero-panel');
@@ -585,14 +507,10 @@
         const mpLocation    = document.getElementById('mp-location');
         const mpSubtext     = document.getElementById('mp-subtext');
         const mpContext     = document.getElementById('mp-context');
-        const badgeDot       = document.getElementById('badge-dot');
-        const badgeLabel     = document.getElementById('badge-label');
-        const statusBadge    = document.getElementById('status-badge');
 
-        // ---- Header tally ----
-        (function renderTally() {
+        (function renderIdleTally() {
             const counts = parliamentaryRecords.reduce((acc, r) => { acc[r.vote] = (acc[r.vote] || 0) + 1; return acc; }, {});
-            tallyLine.textContent = `${parliamentaryRecords.length} MPs Tracked — ${counts.YES || 0} Yes · ${counts.NO || 0} No · ${counts.ABSENT || 0} Absent`;
+            idleTally.textContent = `${parliamentaryRecords.length} MPs · ${counts.YES || 0} voted yes`;
         })();
 
         function showOnly(panel) {
@@ -612,41 +530,20 @@
 
             if (record.vote === "YES") {
                 voteDecision.textContent = "Voted Yes";
-                voteDecision.className = "verdict-word verdict-yes text-7xl sm:text-8xl uppercase mb-6";
+                voteDecision.className = "verdict-word verdict-yes text-7xl sm:text-8xl uppercase mb-5";
                 mpSubtext.textContent = "This MP voted to pass the Finance Bill.";
-
-                badgeDot.className = "w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]";
-                badgeLabel.textContent = "Confirmed Yes Vote";
-                statusBadge.className = "stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-red-950/30 border-red-800/50 text-red-400";
-
-                appWrapper.style.backgroundColor = "#120302";
                 glowField.className = "ambient-glow glow-yes";
-                appWrapper.classList.remove('flash-yes');
-                void appWrapper.offsetWidth;
-                appWrapper.classList.add('flash-yes');
 
             } else if (record.vote === "NO") {
                 voteDecision.textContent = "Voted No";
-                voteDecision.className = "verdict-word verdict-no text-7xl sm:text-8xl uppercase mb-6";
+                voteDecision.className = "verdict-word verdict-no text-7xl sm:text-8xl uppercase mb-5";
                 mpSubtext.textContent = "This MP voted against the Finance Bill.";
-
-                badgeDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
-                badgeLabel.textContent = "Confirmed No Vote";
-                statusBadge.className = "stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-emerald-950/30 border-emerald-800/40 text-emerald-400";
-
-                appWrapper.style.backgroundColor = "#020e08";
                 glowField.className = "ambient-glow glow-no";
 
             } else {
                 voteDecision.textContent = "Absent";
-                voteDecision.className = "verdict-word verdict-absent text-7xl sm:text-8xl uppercase mb-6";
+                voteDecision.className = "verdict-word verdict-absent text-7xl sm:text-8xl uppercase mb-5";
                 mpSubtext.textContent = "This MP was not recorded present for the division.";
-
-                badgeDot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_#d99b1d]";
-                badgeLabel.textContent = "Recorded Absent";
-                statusBadge.className = "stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-amber-950/30 border-amber-800/40 text-amber-400";
-
-                appWrapper.style.backgroundColor = "#100a01";
                 glowField.className = "ambient-glow glow-absent";
             }
 
@@ -654,7 +551,6 @@
         }
 
         function resetToIdle() {
-            appWrapper.style.backgroundColor = "#0a0908";
             glowField.className = "ambient-glow glow-default";
             showOnly(idleState);
         }
