@@ -112,6 +112,7 @@
             <p id="mp-location" class="text-sm text-zinc-500 mt-1"></p>
             <p id="mp-subtext" class="text-sm text-zinc-500 mt-5 max-w-sm mx-auto"></p>
             <p id="mp-context" class="text-xs text-zinc-600 mt-4"></p>
+            <p id="mp-others" class="text-xs text-zinc-600 mt-3 max-w-md mx-auto leading-relaxed"></p>
         </div>
 
         <!-- No matches -->
@@ -120,6 +121,8 @@
         </div>
 
     </main>
+
+    <div id="countdown" class="fixed bottom-5 left-5 text-[11px] text-zinc-600 z-10"></div>
 
     <script>
         // Parliamentary division record — deduplicated 2026-07-09 (5 duplicate/artifact rows removed)
@@ -507,11 +510,34 @@
         const mpLocation    = document.getElementById('mp-location');
         const mpSubtext     = document.getElementById('mp-subtext');
         const mpContext     = document.getElementById('mp-context');
+        const mpOthers      = document.getElementById('mp-others');
+        const OTHERS_LIMIT = 10;
 
         (function renderIdleTally() {
             const counts = parliamentaryRecords.reduce((acc, r) => { acc[r.vote] = (acc[r.vote] || 0) + 1; return acc; }, {});
             idleTally.textContent = `${parliamentaryRecords.length} MPs · ${counts.YES || 0} voted yes`;
         })();
+
+        // ---- Self-closing archive: live 365 days from launch, then goes dark ----
+        const SITE_LAUNCH_DATE = new Date('2026-07-09T00:00:00');
+        const SITE_LIFESPAN_DAYS = 365;
+        const countdownEl = document.getElementById('countdown');
+
+        function renderCountdown() {
+            const closeDate = new Date(SITE_LAUNCH_DATE.getTime() + SITE_LIFESPAN_DAYS * 86400000);
+            const daysLeft = Math.ceil((closeDate - Date.now()) / 86400000);
+            const closeDateLabel = closeDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            if (daysLeft > 0) {
+                countdownEl.textContent = `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`;
+                countdownEl.title = `This archive closes automatically on ${closeDateLabel}.`;
+            } else {
+                countdownEl.textContent = "Archive closed";
+                countdownEl.title = `This archive closed on ${closeDateLabel}.`;
+            }
+        }
+        renderCountdown();
+        setInterval(renderCountdown, 60 * 60 * 1000);
 
         function showOnly(panel) {
             [idleState, heroPanel, emptyState].forEach(p => {
@@ -523,10 +549,11 @@
             });
         }
 
-        function renderHero(record, contextLabel) {
+        function renderHero(record, contextLabel, others) {
             mpName.textContent = record.name;
             mpLocation.textContent = `${record.constituency} — ${record.county}`;
             mpContext.textContent = contextLabel || "";
+            renderOthers(others);
 
             if (record.vote === "YES") {
                 voteDecision.textContent = "Voted Yes";
@@ -550,6 +577,31 @@
             showOnly(heroPanel);
         }
 
+        // Soft, inline alternates for filter-mode queries (e.g. a whole county) —
+        // deliberately not a list/table, just quiet clickable names in the flow of text.
+        function renderOthers(others) {
+            mpOthers.innerHTML = "";
+            if (!others || others.length === 0) return;
+
+            const shown = others.slice(0, OTHERS_LIMIT);
+            shown.forEach((record, i) => {
+                const btn = document.createElement('button');
+                btn.textContent = record.name;
+                btn.className = "text-zinc-500 hover:text-zinc-200 transition-colors underline decoration-zinc-700 hover:decoration-zinc-400 underline-offset-2";
+                btn.addEventListener('click', () => {
+                    searchInput.value = record.name;
+                    renderHero(record, "", null);
+                    searchInput.focus();
+                });
+                mpOthers.appendChild(btn);
+                if (i < shown.length - 1) mpOthers.appendChild(document.createTextNode(", "));
+            });
+
+            if (others.length > OTHERS_LIMIT) {
+                mpOthers.appendChild(document.createTextNode(` +${others.length - OTHERS_LIMIT} more — keep typing to narrow it down`));
+            }
+        }
+
         function resetToIdle() {
             glowField.className = "ambient-glow glow-default";
             showOnly(idleState);
@@ -566,6 +618,7 @@
             const { vote, county, remainder } = parseQuery(raw);
             let best;
             let context = "";
+            let others = null;
 
             if (vote || county) {
                 let pool = parliamentaryRecords.filter(r =>
@@ -586,6 +639,7 @@
                     if (vote) parts.push(`${vote} votes`);
                     if (county) parts.push(county);
                     context = `1 of ${pool.length} — ${parts.join(' in ')}`;
+                    others = pool.slice(1);
                 }
             } else {
                 const results = fuse.search(raw);
@@ -593,7 +647,7 @@
             }
 
             if (!best) { showOnly(emptyState); return; }
-            renderHero(best, context);
+            renderHero(best, context, others);
         });
     </script>
 </body>
