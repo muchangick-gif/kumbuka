@@ -119,19 +119,6 @@
             100% { background-color: transparent; }
         }
 
-        /* Result list row */
-        .record-row {
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            transition: background-color 0.15s ease;
-            cursor: pointer;
-        }
-        .record-row:hover, .record-row:focus-visible { background-color: rgba(255,255,255,0.035); }
-        .record-row:last-child { border-bottom: none; }
-
-        #results-list::-webkit-scrollbar { width: 6px; }
-        #results-list::-webkit-scrollbar-track { background: transparent; }
-        #results-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-
         .fade-slide {
             transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1);
         }
@@ -180,16 +167,8 @@
             </div>
         </div>
 
-        <!-- Results list (multiple matches) -->
-        <div id="results-panel" class="fade-slide opacity-0 translate-y-4 pointer-events-none hidden">
-            <div id="results-meta" class="text-center font-record text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-3"></div>
-            <div id="results-list" class="ledger-card rounded-2xl max-h-[52vh] overflow-y-auto divide-y divide-white/5"></div>
-        </div>
-
-        <!-- Hero verdict (single match) -->
+        <!-- Hero verdict (always exactly one match shown) -->
         <div id="hero-panel" class="text-center fade-slide opacity-0 translate-y-4 pointer-events-none hidden">
-            <button id="back-to-list" class="hidden mb-4 font-record text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-300 transition-colors">&larr; Back to results</button>
-
             <div id="status-badge" class="stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-zinc-900/60 border-zinc-800 text-zinc-400">
                 <span id="badge-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
                 <span id="badge-label">Confirmed</span>
@@ -201,6 +180,7 @@
                 <p id="mp-name" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white"></p>
                 <p id="mp-location" class="text-xs font-record tracking-[0.2em] text-zinc-500 uppercase mt-2"></p>
                 <p id="mp-subtext" class="text-sm text-zinc-500 mt-4 max-w-sm mx-auto"></p>
+                <p id="mp-context" class="text-[10px] font-record tracking-[0.15em] text-zinc-600 uppercase mt-5"></p>
             </div>
         </div>
 
@@ -590,8 +570,6 @@
             includeScore: true
         });
 
-        const MAX_LIST_ROWS = 60;
-
         // ---- DOM refs ----
         const searchInput   = document.getElementById('search-input');
         const appWrapper    = document.getElementById('app-wrapper');
@@ -599,17 +577,14 @@
         const tallyLine      = document.getElementById('tally-line');
 
         const idleState      = document.getElementById('idle-state');
-        const resultsPanel   = document.getElementById('results-panel');
-        const resultsMeta    = document.getElementById('results-meta');
-        const resultsList    = document.getElementById('results-list');
         const heroPanel       = document.getElementById('hero-panel');
         const emptyState      = document.getElementById('empty-state');
-        const backToListBtn   = document.getElementById('back-to-list');
 
         const voteDecision = document.getElementById('vote-decision');
         const mpName        = document.getElementById('mp-name');
         const mpLocation    = document.getElementById('mp-location');
         const mpSubtext     = document.getElementById('mp-subtext');
+        const mpContext     = document.getElementById('mp-context');
         const badgeDot       = document.getElementById('badge-dot');
         const badgeLabel     = document.getElementById('badge-label');
         const statusBadge    = document.getElementById('status-badge');
@@ -620,10 +595,8 @@
             tallyLine.textContent = `${parliamentaryRecords.length} MPs Tracked — ${counts.YES || 0} Yes · ${counts.NO || 0} No · ${counts.ABSENT || 0} Absent`;
         })();
 
-        let lastResultSet = [];
-
         function showOnly(panel) {
-            [idleState, resultsPanel, heroPanel, emptyState].forEach(p => {
+            [idleState, heroPanel, emptyState].forEach(p => {
                 const isTarget = p === panel;
                 p.classList.toggle('opacity-0', !isTarget);
                 p.classList.toggle('translate-y-4', !isTarget);
@@ -632,62 +605,10 @@
             });
         }
 
-        function voteBadgeClasses(vote) {
-            if (vote === "YES") return "text-red-400";
-            if (vote === "NO") return "text-emerald-400";
-            return "text-amber-400";
-        }
-
-        function renderList(records, metaLabel) {
-            lastResultSet = records;
-            resultsMeta.textContent = metaLabel;
-            resultsList.innerHTML = "";
-
-            const shown = records.slice(0, MAX_LIST_ROWS);
-            shown.forEach(record => {
-                const row = document.createElement('div');
-                row.className = "record-row flex items-center justify-between gap-4 px-5 py-3.5 text-left";
-                row.tabIndex = 0;
-
-                const left = document.createElement('div');
-                const nameEl = document.createElement('p');
-                nameEl.className = "text-sm font-semibold text-zinc-100";
-                nameEl.textContent = record.name;
-                const locEl = document.createElement('p');
-                locEl.className = "text-[11px] font-record text-zinc-500 uppercase tracking-wide mt-0.5";
-                locEl.textContent = `${record.constituency} — ${record.county}`;
-                left.appendChild(nameEl);
-                left.appendChild(locEl);
-
-                const badge = document.createElement('span');
-                badge.className = `font-record text-[10px] uppercase tracking-[0.15em] shrink-0 ${voteBadgeClasses(record.vote)}`;
-                badge.textContent = record.vote;
-
-                row.appendChild(left);
-                row.appendChild(badge);
-
-                const select = () => renderHero(record, true);
-                row.addEventListener('click', select);
-                row.addEventListener('keydown', (e) => { if (e.key === 'Enter') select(); });
-
-                resultsList.appendChild(row);
-            });
-
-            if (records.length > MAX_LIST_ROWS) {
-                const more = document.createElement('div');
-                more.className = "px-5 py-3 text-center text-[10px] font-record uppercase tracking-[0.15em] text-zinc-600";
-                more.textContent = `+ ${records.length - MAX_LIST_ROWS} more — refine your search`;
-                resultsList.appendChild(more);
-            }
-
-            showOnly(resultsPanel);
-        }
-
-        function renderHero(record, cameFromList) {
-            backToListBtn.classList.toggle('hidden', !(cameFromList && lastResultSet.length > 1));
-
+        function renderHero(record, contextLabel) {
             mpName.textContent = record.name;
             mpLocation.textContent = `${record.constituency} — ${record.county}`;
+            mpContext.textContent = contextLabel || "";
 
             if (record.vote === "YES") {
                 voteDecision.textContent = "Voted Yes";
@@ -738,16 +659,17 @@
             showOnly(idleState);
         }
 
-        backToListBtn.addEventListener('click', () => renderList(lastResultSet, resultsMeta.textContent));
-
+        // Resolves every query to exactly one record — no list UI. Plain-language
+        // vote/county filters narrow a pool, then the first (alphabetical-by-
+        // constituency) record in that pool is shown as the single answer.
         searchInput.addEventListener('input', (e) => {
             const raw = e.target.value.trim();
 
             if (raw === "") { resetToIdle(); return; }
 
             const { vote, county, remainder } = parseQuery(raw);
-            let results;
-            let meta;
+            let best;
+            let context = "";
 
             if (vote || county) {
                 let pool = parliamentaryRecords.filter(r =>
@@ -760,25 +682,22 @@
                         r.constituency.toLowerCase().includes(remainder)
                     );
                 }
-                results = [...pool].sort((a, b) => a.constituency.localeCompare(b.constituency));
+                pool = [...pool].sort((a, b) => a.constituency.localeCompare(b.constituency));
+                best = pool[0];
 
-                const parts = [];
-                if (vote) parts.push(`Vote: ${vote}`);
-                if (county) parts.push(`County: ${county}`);
-                meta = `${results.length} match${results.length === 1 ? '' : 'es'} — ${parts.join(' · ')}`;
+                if (best && pool.length > 1) {
+                    const parts = [];
+                    if (vote) parts.push(`${vote} votes`);
+                    if (county) parts.push(county);
+                    context = `1 of ${pool.length} — ${parts.join(' in ')}`;
+                }
             } else {
-                results = fuse.search(raw).map(r => r.item);
-                meta = `${results.length} match${results.length === 1 ? '' : 'es'} for "${raw}"`;
+                const results = fuse.search(raw);
+                best = results[0] && results[0].item;
             }
 
-            if (results.length === 0) {
-                showOnly(emptyState);
-            } else if (results.length === 1) {
-                lastResultSet = results;
-                renderHero(results[0], false);
-            } else {
-                renderList(results, meta);
-            }
+            if (!best) { showOnly(emptyState); return; }
+            renderHero(best, context);
         });
     </script>
 </body>
