@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kumbuka — The Streets Never Forget</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #030303;
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        /* Premium Background Ambient Glow Element */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 700px;
+            height: 700px;
+            z-index: 0;
+            pointer-events: none;
+            transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Glassmorphic User Interface Container */
+        .premium-card {
+            background: rgba(12, 12, 14, 0.6);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .premium-card:focus-within {
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.02);
+            transform: scale(1.01);
+        }
+
+        input:focus {
+            outline: none;
+        }
+
+        /* Ambient Light Color Interpolations */
+        .glow-default { background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 70%); }
+        .glow-yes { background: radial-gradient(circle, rgba(239,68,68,0.14) 0%, rgba(239,68,68,0.02) 45%, rgba(0,0,0,0) 70%); }
+        .glow-no { background: radial-gradient(circle, rgba(16,185,129,0.14) 0%, rgba(16,185,129,0.02) 45%, rgba(0,0,0,0) 70%); }
+        .glow-absent { background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, rgba(0,0,0,0) 70%); }
+        .glow-scanning { background: radial-gradient(circle, rgba(39,39,42,0.1) 0%, rgba(0,0,0,0) 70%); }
+    </style>
+</head>
+<body id="app-wrapper" class="text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-white/10 overflow-hidden relative">
+
+    <div id="glow-field" class="ambient-glow glow-default"></div>
+
+    <header class="w-full max-w-7xl mx-auto px-8 py-8 flex justify-between items-center z-10 opacity-30 hover:opacity-80 transition-opacity duration-300">
+        <div class="text-[10px] font-mono tracking-[0.4em] uppercase text-zinc-400">Kumbuka Archive</div>
+        <div class="text-[10px] font-mono tracking-[0.4em] uppercase text-zinc-400">Pristine Local Data Engine</div>
+    </header>
+
+    <main class="w-full max-w-2xl mx-auto px-6 py-12 flex-grow flex flex-col justify-center z-10">
+        
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-black tracking-tight mb-4 bg-gradient-to-b from-white via-zinc-200 to-zinc-600 bg-clip-text text-transparent uppercase">
+                The Streets Never Forget.
+            </h1>
+            <p class="text-zinc-500 text-xs tracking-widest uppercase font-mono">
+                Public Accountability Index • Finance Bill Record
+            </p>
+        </div>
+
+        <div class="premium-card rounded-2xl p-1.5 mb-16">
+            <input 
+                type="text" 
+                id="search-input" 
+                autocomplete="off"
+                placeholder="Enter Constituency, County or MP Name..." 
+                class="w-full px-6 py-5 rounded-xl bg-zinc-900/40 text-white placeholder-zinc-700 text-xl font-medium tracking-wide border border-transparent"
+            >
+        </div>
+
+        <div id="output-view" class="text-center opacity-0 transform translate-y-6 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none">
+            
+            <div id="status-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-zinc-900 border border-zinc-800 text-zinc-400">
+                <span id="badge-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
+                <span id="badge-label">System Idle</span>
+            </div>
+            
+            <h2 id="vote-decision" class="text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none"></h2>
+            
+            <div class="mt-4">
+                <p id="mp-name" class="text-3xl font-extrabold tracking-tight text-white"></p>
+                <p id="mp-location" class="text-xs font-mono tracking-[0.2em] text-zinc-500 uppercase mt-2"></p>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="w-full max-w-7xl mx-auto px-8 py-8 text-center text-[9px] font-mono tracking-[0.3em] text-zinc-700 uppercase z-10">
+        Decentralised Public Record Ledger • Sourced via Cross-Verified Division Roll Call
+    </footer>
+
+    <script>
+        // Complete Cleaned Local Database Array Matrix
+        const parliamentaryRecords = [
+            { name: "Samuel Chepkonga", constituency: "Ainabkoi", county: "Uasin Gishu", vote: "YES" },
+            { name: "Benjamin Kipkirui", constituency: "Kapseret", county: "Uasin Gishu", vote: "YES" },
+            { name: "Marianne Kitany", constituency: "Aldai", county: "Nandi", vote: "YES" },
+            { name: "Samuel Atandi", constituency: "Alego Usonga", county: "Siaya", vote: "NO" },
+            { name: "John Walter Owino", constituency: "Awendo", county: "Migori", vote: "NO" },
+            { name: "Irene Njoki", constituency: "Bahati", county: "Nakuru", vote: "ABSENT" },
+            { name: "Abdi Shurie", constituency: "Balambala", county: "Garissa", vote: "ABSENT" },
+            { name: "Florence Jematia", constituency: "Baringo County", county: "Baringo", vote: "YES" },
+            { name: "Joshua Kandie", constituency: "Baringo Central", county: "Baringo", vote: "YES" },
+            { name: "Kipkoros Makilap", constituency: "Baringo North", county: "Baringo", vote: "YES" },
+            { name: "Charles Kamuren", constituency: "Baringo South", county: "Baringo", vote: "YES" },
+            { name: "Koech Nelson", constituency: "Belgut", county: "Kericho", vote: "YES" },
+            { name: "Barongo Nolphason", constituency: "Borabu", county: "Nyamira", vote: "NO" },
+            { name: "Alpha Miruka", constituency: "Bomachoge Chache", county: "Kisii", vote: "YES" },
+            { name: "Linet Chepkorir (Toto)", constituency: "Bomet County", county: "Bomet", vote: "YES" },
+            { name: "Richard Cheruiyot", constituency: "Bomet Central", county: "Bomet", vote: "YES" },
+            { name: "Yegon Richard", constituency: "Bomet East", county: "Bomet", vote: "YES" },
+            { name: "Gideon Ochanda", constituency: "Bondo", county: "Siaya", vote: "YES" },
+            { name: "Osero Patrick Kibagendi", constituency: "Kitutu Chache South", county: "Kisii", vote: "NO" },
+            { name: "Raphael Wanjala", constituency: "Budalangi", county: "Busia", vote: "NO" },
+            { name: "Jack Wamboka", constituency: "Bumula", county: "Bungoma", vote: "NO" },
+            { name: "Catherine Wambilianga", constituency: "Bungoma County", county: "Bungoma", vote: "YES" },
+            { name: "Yakub Adow", constituency: "Bura", county: "Tana River", vote: "ABSENT" },
+            { name: "Komingoi Kibet", constituency: "Bureti", county: "Kericho", vote: "YES" },
+            { name: "Catherine Omanyo", constituency: "Busia County", county: "Busia", vote: "NO" },
+            { name: "Tindi Mwale", constituency: "Butere", county: "Kakamega", vote: "NO" },
+            { name: "Oyula Joseph", constituency: "Butula", county: "Busia", vote: "NO" },
+            { name: "Rindikiri Mugambi", constituency: "Buuri", county: "Meru", vote: "YES" },
+            { name: "Kirima Nguchine", constituency: "Central Imenti", county: "Meru", vote: "YES" },
+            { name: "Omar Shimbwa Mwinyi", constituency: "Changamwe", county: "Mombasa", vote: "NO" },
+            { name: "Victor Koech", constituency: "Chepalungu", county: "Bomet", vote: "YES" },
+            { name: "Patrick Simiyu", constituency: "Cherangany", county: "Trans Nzoia", vote: "NO" },
+            { name: "Byego Paul Kibichii", constituency: "Chesumei", county: "Nandi", vote: "YES" },
+            { name: "Patrick Ntwiga", constituency: "Chuka/Igambang'ombe", county: "Tharaka Nithi", vote: "YES" },
+            { name: "Farah Maalim", constituency: "Dadaab", county: "Garissa", vote: "YES" },
+            { name: "Beatrice Elachi", constituency: "Dagoretti North", county: "Nairobi", vote: "NO" },
+            { name: "John Kiarie (KJ)", constituency: "Dagoretti South", county: "Nairobi", vote: "YES" },
+            { name: "Musa Sirma", constituency: "Eldama Ravine", county: "Baringo", vote: "YES" },
+            { name: "Adan Keynan", constituency: "Eldas", county: "Wajir", vote: "YES" },
+            { name: "Jeptoo Caroline Ngelechei", constituency: "Elgeyo Marakwet County", county: "Elgeyo Marakwet", vote: "YES" },
+            { name: "Babu Owino", constituency: "Embakasi East", county: "Nairobi", vote: "NO" },
+            { name: "James Gakuya", constituency: "Embakasi North", county: "Nairobi", vote: "ABSENT" },
+            { name: "Julius Mawathe", constituency: "Embakasi South", county: "Nairobi", vote: "NO" },
+            { name: "Mark Mwenje", constituency: "Embakasi West", county: "Nairobi", vote: "NO" },
+            { name: "Lelemengit Josses", constituency: "Emgwen", county: "Nandi", vote: "YES" },
+            { name: "Omboko Milemba", constituency: "Emuhaya", county: "Vihiga", vote: "YES" },
+            { name: "Johana Ngeno", constituency: "Emurua Dikirr", county: "Narok", vote: "YES" },
+            { name: "Robert Pukose", constituency: "Endebess", county: "Trans Nzoia", vote: "YES" },
+            { name: "Yakub Farah", constituency: "Fafi", county: "Garissa", vote: "YES" },
+            { name: "Oundo Ojiambo", constituency: "Funyula", county: "Busia", vote: "NO" },
+            { name: "Hiribae Said", constituency: "Galole", county: "Tana River", vote: "ABSENT" },
+            { name: "Tungule Charo Kazungu", constituency: "Ganze", county: "Kilifi", vote: "YES" },
+            { name: "Udgoon Siyyad", constituency: "Garissa County", county: "Garissa", vote: "NO" },
+            { name: "Baro Dekow", constituency: "Garissa Township", county: "Garissa", vote: "YES" },
+            { name: "Guyo Ali Wario", constituency: "Garsen", county: "Tana River", vote: "YES" },
+            { name: "Edward Wakili", constituency: "Gatundu North", county: "Kiambu", vote: "YES" },
+            { name: "Kururia Njoroge", constituency: "Gatundu North Tracker", county: "Kiambu", vote: "YES" },
+            { name: "Gabriel Kagombe", constituency: "Gatundu South", county: "Kiambu", vote: "YES" },
+            { name: "Elisha Odhiambo", constituency: "Gem", county: "Siaya", vote: "NO" },
+            { name: "Robert Gichimu", constituency: "Gichugu", county: "Kirinyaga", vote: "YES" },
+            { name: "Martha Wangari", constituency: "Gilgil", county: "Nakuru", vote: "YES" },
+            { name: "Gathoni Wamuchomba", constituency: "Githunguri", county: "Kiambu", vote: "NO" },
+            { name: "Gimose Gumini", constituency: "Hamisi", county: "Vihiga", vote: "YES" },
+            { name: "George Kaluma", constituency: "Homa Bay Town", county: "Homa Bay", vote: "NO" },
+            { name: "Karithi Kiili", constituency: "Igembe Central", county: "Meru", vote: "YES" },
+            { name: "Julius Taitumu", constituency: "Igembe North", county: "Meru", vote: "YES" },
+            { name: "John Paul Mwirigi", constituency: "Igembe South", county: "Meru", vote: "YES" },
+            { name: "Ali Abdi Ali", constituency: "Ijara", county: "Garissa", vote: "YES" },
+            { name: "Bernard Shinali", constituency: "Ikolomani", county: "Kakamega", vote: "YES" },
+            { name: "Mumina Bonaya", constituency: "Isiolo County", county: "Isiolo", vote: "YES" },
+            { name: "Lomwaa Joseph Samal", constituency: "Isiolo North", county: "Isiolo", vote: "ABSENT" },
+            { name: "Bady Bady Twalib", constituency: "Jomvu", county: "Mombasa", vote: "NO" },
+            { name: "George Koimburi", constituency: "Juja", county: "Kiambu", vote: "NO" },
+            { name: "Wamacukuru James", constituency: "Kabete", county: "Kiambu", vote: "YES" },
+            { name: "Eve Obara", constituency: "Kabondo Kasipul", county: "Homa Bay", vote: "NO" },
+            { name: "Kalasinga Majimbo", constituency: "Kabuchai", county: "Bungoma", vote: "NO" },
+            { name: "Titus Lotee", constituency: "Kacheliba", county: "West Pokot", vote: "YES" },
+            { name: "Joseph Kimilu", constituency: "Kaiti", county: "Makueni", vote: "NO" },
+            { name: "Leah Sankaire", constituency: "Kajiado County", county: "Kajiado", vote: "YES" },
+            { name: "Memusi Kanchory", constituency: "Kajiado Central", county: "Kajiado", vote: "YES" },
+            { name: "Kakuta Maimai", constituency: "Kajiado East", county: "Kajiado", vote: "NO" },
+            { name: "Onesmus Ngogoyo", constituency: "Kajiado North", county: "Kajiado", vote: "YES" },
+            { name: "Sakimba Parashina", constituency: "Kajiado South", county: "Kajiado", vote: "NO" },
+            { name: "Sunkuiya George", constituency: "Kajiado West", county: "Kajiado", vote: "YES" },
+            { name: "Elsie Muhanda", constituency: "Kakamega County", county: "Kakamega", vote: "NO" },
+            { name: "Paul Katana", constituency: "Kaloleni", county: "Kilifi", vote: "NO" },
+            { name: "Yussuf Hassan", constituency: "Kamukunji", county: "Nairobi", vote: "NO" },
+            { name: "Chege Njuguna", constituency: "Kandara", county: "Murang'a", vote: "YES" },
+            { name: "John Makali", constituency: "Kanduyi", county: "Bungoma", vote: "YES" },
+            { name: "Peter Irungu", constituency: "Kangema", county: "Murang'a", vote: "YES" },
+            { name: "Fabian Kyule", constituency: "Kangundo", county: "Machakos", vote: "YES" },
+            { name: "Moroto Samuel", constituency: "Kapenguria", county: "West Pokot", vote: "YES" },
+            { name: "Oscar Sudi", constituency: "Kapseret", county: "Uasin Gishu", vote: "YES" },
+            { name: "Adipo Okuome", constituency: "Karachuonyo", county: "Homa Bay", vote: "NO" },
+            { name: "Ronald Karauri", constituency: "Kasarani", county: "Nairobi", vote: "YES" },
+            { name: "Charles Were", constituency: "Kasipul", county: "Homa Bay", vote: "NO" },
+            { name: "Robert Mbui", constituency: "Kathiani", county: "Machakos", vote: "NO" },
+            { name: "Adams Kipsanai", constituency: "Keiyo North", county: "Elgeyo Marakwet", vote: "YES" },
+            { name: "Gideon Kimaiyo", constituency: "Keiyo South", county: "Elgeyo Marakwet", vote: "YES" },
+            { name: "Beatrice Kemei", constituency: "Kericho County", county: "Kericho", vote: "YES" },
+            { name: "Julius Ruto", constituency: "Kesses", county: "Uasin Gishu", vote: "YES" },
+            { name: "Christopher Aseka", constituency: "Khwisero", county: "Kakamega", vote: "YES" },
+            { name: "John Kawanjiku", constituency: "Kiambaa", county: "Kiambu", vote: "YES" },
+            { name: "Waithaka John", constituency: "Kiambu Township", county: "Kiambu", vote: "YES" },
+            { name: "Wamuratha Wanjiku", constituency: "Kiambu County", county: "Kiambu", vote: "YES" },
+            { name: "Peter Orero", constituency: "Kibra", county: "Nairobi", vote: "NO" },
+            { name: "Jessica Mbalu", constituency: "Kibwezi East", county: "Makueni", vote: "NO" },
+            { name: "Mwengi Mutuse", constituency: "Kibwezi West", county: "Makueni", vote: "YES" },
+            { name: "Njoroge Wainaina", constituency: "Kieni", county: "Nyeri", vote: "YES" },
+            { name: "Joseph Munyoro", constituency: "Kigumo", county: "Murang'a", vote: "YES" },
+            { name: "Ndindi Nyoro", constituency: "Kiharu", county: "Murang'a", vote: "YES" },
+            { name: "Kimani Ichung’wah", constituency: "Kikuyu", county: "Kiambu", vote: "YES" },
+            { name: "Julius Sunkuli", constituency: "Kilgoris", county: "Narok", vote: "NO" },
+            { name: "Gertrude Mbeyu", constituency: "Kilifi County", county: "Kilifi", vote: "NO" },
+            { name: "Owen Baya", constituency: "Kilifi North", county: "Kilifi", vote: "YES" },
+            { name: "Ken Chonga", constituency: "Kilifi South", county: "Kilifi", vote: "NO" },
+            { name: "Nzambia Kithua", constituency: "Kilome", county: "Makueni", vote: "NO" },
+            { name: "Didmus Barasa", constituency: "Kimilili", county: "Bungoma", vote: "YES" },
+            { name: "Kakai Bisau", constituency: "Kiminini", county: "Trans Nzoia", vote: "NO" },
+            { name: "Gonzi Rai", constituency: "Kinango", county: "Kwale", vote: "YES" },
+            { name: "Kwenya Thuku", constituency: "Kinangop", county: "Nyandarua", vote: "YES" },
+            { name: "Wanjiku Muhia", constituency: "Kipipiri", county: "Nyandarua", vote: "YES" },
+            { name: "Cherorot Joseph", constituency: "Kipkelion East", county: "Kericho", vote: "YES" },
+            { name: "Hillary Kosgei", constituency: "Kipkelion West", county: "Kericho", vote: "YES" },
+            { name: "Jane Maina Njeri", constituency: "Kirinyaga County", county: "Kirinyaga", vote: "ABSENT" },
+            { name: "Joseph Gitari", constituency: "Kirinyaga Central", county: "Kirinyaga", vote: "YES" },
+            { name: "Bedzimba Rashid", constituency: "Kisauni", county: "Mombasa", vote: "NO" },
+            { name: "Ruth Odinga", constituency: "Kisumu County", county: "Kisumu", vote: "NO" },
+            { name: "Oron Joshua", constituency: "Kisumu Central", county: "Kisumu", vote: "NO" },
+            { name: "Shakeel Shabbir", constituency: "Kisumu East", county: "Kisumu", vote: "ABSENT" },
+            { name: "Rozaah Buyu", constituency: "Kisumu West", county: "Kisumu", vote: "NO" },
+            { name: "Irene Kasalu", constituency: "Kitui County", county: "Kitui", vote: "NO" },
+            { name: "Makali Mulu", constituency: "Kitui Central", county: "Kitui", vote: "NO" },
+            { name: "Nimrod Mbai", constituency: "Kitui East", county: "Kitui", vote: "YES" },
+            { name: "Mboni Mwalika", constituency: "Kitui Rural", county: "Kitui", vote: "NO" },
+            { name: "Rachael Nyamai", constituency: "Kitui South", county: "Kitui", vote: "YES" },
+            { name: "Edith Nyenze", constituency: "Kitui West", county: "Kitui", vote: "NO" },
+            { name: "Japheth Nyakundi", constituency: "Kitutu Chache North", county: "Kisii", vote: "YES" },
+            { name: "Kibagendi Anthony", constituency: "Kitutu Chache South Matrix", county: "Kisii", vote: "NO" },
+            { name: "Clive Gisairo", constituency: "Kitutu Masaba", county: "Nyamira", vote: "NO" },
+            { name: "Alfred Mutai", constituency: "Kuresoi North", county: "Nakuru", vote: "YES" },
+            { name: "Joseph Tonui", constituency: "Kuresoi South", county: "Nakuru", vote: "YES" },
+            { name: "Kitayama Maisori", constituency: "Kuria East", county: "Migori", vote: "YES" },
+            { name: "Mathias Robi", constituency: "Kuria West", county: "Migori", vote: "YES" },
+            { name: "Fatuma Masito", constituency: "Kwale County", county: "Kwale", vote: "NO" },
+            { name: "Ferdinand Wanyonyi", constituency: "Kwanza", county: "Trans Nzoia", vote: "YES" },
+            { name: "Abdulrahman Mohamed", constituency: "Lafey", county: "Mandera", vote: "NO" },
+            { name: "Mohamed Hussein Abdekadir", constituency: "Lagdera", county: "Garissa", vote: "YES" },
+            { name: "Jane Kagiri", constituency: "Laikipia County", county: "Laikipia", vote: "YES" },
+            { name: "Mwangi Kiunjuri", constituency: "Laikipia East", county: "Laikipia", vote: "YES" },
+            { name: "Sarah Korere", constituency: "Laikipia North", county: "Laikipia", vote: "YES" },
+            { name: "Stephen Wachira Karani", constituency: "Laikipia West", county: "Laikipia", vote: "YES" },
+            { name: "Joseph Lekuton", constituency: "Laisamis", county: "Marsabit", vote: "YES" },
+            { name: "Muthoni Marubu", constituency: "Lamu County", county: "Lamu", vote: "YES" },
+            { name: "Ruweida Obo", constituency: "Lamu East", county: "Lamu", vote: "YES" },
+            { name: "Stanley Muthama", constituency: "Lamu West", county: "Lamu", vote: "YES" },
+            { name: "Phelix Odiwuor (Jalang’o)", constituency: "Lang'ata", county: "Nairobi", vote: "NO" },
+            { name: "Kahangara Joseph", constituency: "Lari", county: "Kiambu", vote: "YES" },
+            { name: "Mishi Mboko", constituency: "Likoni", county: "Mombasa", vote: "NO" },
+            { name: "Innocent Mugabe", constituency: "Likuyani", county: "Kakamega", vote: "NO" },
+            { name: "John Chege Kiragu", constituency: "Limuru", county: "Kiambu", vote: "YES" },
+            { name: "Protus Akuja", constituency: "Loima", county: "Turkana", vote: "YES" },
+            { name: "Dick Maungu", constituency: "Luanda", county: "Vihiga", vote: "NO" },
+            { name: "Nabii Nabwera", constituency: "Lugari", county: "Kakamega", vote: "NO" },
+            { name: "Chiforomodo Mangale", constituency: "Lunga Lunga", county: "Kwale", vote: "YES" },
+            { name: "Titus Khamala", constituency: "Lurambi", county: "Kakamega", vote: "NO" },
+            { name: "Kareke Mbiuki", constituency: "Maara", county: "Tharaka Nithi", vote: "YES" },
+            { name: "Joyce Kamene", constituency: "Machakos County", county: "Machakos", vote: "NO" },
+            { name: "Caleb Mule", constituency: "Machakos Town", county: "Machakos", vote: "YES" },
+            { name: "George Aladwa", constituency: "Makadara", county: "Nairobi", vote: "NO" },
+            { name: "Suzanne Kiamba", constituency: "Makueni County", county: "Makueni", vote: "NO" },
+            { name: "Malulu Injendi", constituency: "Malava", county: "Kakamega", vote: "YES" },
+            { name: "Amina Mnyazi", constituency: "Malindi", county: "Kilifi", vote: "NO" },
+            { name: "Sheikh Bashir Abdullahi", constituency: "Mandera County", county: "Mandera", vote: "YES" },
+            { name: "Umul kher Kassim", constituency: "Mandera County Option", county: "Mandera", vote: "YES" },
+            { name: "Husseinweytan Mohamed", constituency: "Mandera East", county: "Mandera", vote: "NO" },
+            { name: "Abdul Haro Ibrahim", constituency: "Mandera South", county: "Mandera", vote: "YES" },
+            { name: "Yusuf Adan Haji", constituency: "Mandera West", county: "Mandera", vote: "YES" },
+            { name: "John Mukunji", constituency: "Manyatta", county: "Embu", vote: "NO" },
+            { name: "Wamaua Njoroge", constituency: "Maragwa", county: "Murang'a", vote: "YES" },
+            { name: "David Bowen", constituency: "Marakwet East", county: "Elgeyo Marakwet", vote: "YES" },
+            { name: "Kipchumba Toroitich", constituency: "Marakwet West", county: "Elgeyo Marakwet", vote: "YES" },
+            { name: "Naomi Waqo", constituency: "Marsabit County", county: "Marsabit", vote: "YES" },
+            { name: "Joshua Mwaliyo", constituency: "Masinga", county: "Machakos", vote: "ABSENT" },
+            { name: "Geoffrey Odanga", constituency: "Matayos", county: "Busia", vote: "NO" },
+            { name: "Anthony Oluoch", constituency: "Mathare", county: "Nairobi", vote: "NO" },
+            { name: "Eric Mwangi Kahugu", constituency: "Mathira", county: "Nyeri", vote: "YES" },
+            { name: "Kassim Sawa", constituency: "Matuga", county: "Kwale", vote: "YES" },
+            { name: "Peter Oscar Nabulindo", constituency: "Matungu", county: "Kakamega", vote: "YES" },
+            { name: "Stephen Mule", constituency: "Matungulu", county: "Machakos", vote: "NO" },
+            { name: "Geoffrey Kariuki", constituency: "Mbeere North", county: "Embu", vote: "YES" },
+            { name: "Bernard Muriuki", constituency: "Mbeere South", county: "Embu", vote: "YES" },
+            { name: "Erastus Kivasu", constituency: "Mbooni", county: "Makueni", vote: "NO" },
+            { name: "Elizabeth Kailemia", constituency: "Meru County", county: "Meru", vote: "YES" },
+            { name: "Fatuma Zainab", constituency: "Migori County", county: "Migori", vote: "NO" },
+            { name: "Reuben Kiborek", constituency: "Mogotio", county: "Baringo", vote: "YES" },
+            { name: "Phyllis Bartoo", constituency: "Moiben", county: "Uasin Gishu", vote: "YES" },
+            { name: "Kuria Kimani", constituency: "Molo", county: "Nakuru", vote: "YES" },
+            { name: "Zamzam Mohamed", constituency: "Mombasa County", county: "Mombasa", vote: "NO" },
+            { name: "Abraham Kirwa", constituency: "Mosop", county: "Nandi", vote: "YES" },
+            { name: "Feisal Bader", constituency: "Msambweni", county: "Kwale", vote: "YES" },
+            { name: "Fred Kapondi", constituency: "Mount Elgon", county: "Bungoma", vote: "YES" },
+            { name: "James K'oyoo", constituency: "Muhoroni", county: "Kisumu", vote: "NO" },
+            { name: "Kaguchia John", constituency: "Mukurweini", county: "Nyeri", vote: "YES" },
+            { name: "Peter Salasya", constituency: "Mumias East", county: "Kakamega", vote: "NO" },
+            { name: "Johnson Naicca", constituency: "Mumias West", county: "Kakamega", vote: "YES" },
+            { name: "Betty Maina", constituency: "Murang'a County", county: "Murang'a", vote: "YES" },
+            { name: "Mohamed Machele", constituency: "Mvita", county: "Mombasa", vote: "NO" },
+            { name: "Vincent Musyoka", constituency: "Mwala", county: "Machakos", vote: "YES" },
+            { name: "Mary Maingi", constituency: "Mwea", county: "Kirinyaga", vote: "YES" },
+            { name: "Gideon Mulyungi", constituency: "Mwingi Central", county: "Kitui", vote: "NO" },
+            { name: "Paul Nzengu", constituency: "Mwingi West", county: "Kitui", vote: "NO" },
+            { name: "Charles Nguna", constituency: "Mwingi West Alt", county: "Kitui", vote: "NO" },
+            { name: "Esther Passaris", constituency: "Nairobi County", county: "Nairobi", vote: "NO" },
+            { name: "Jayne Kihara", constituency: "Naivasha", county: "Nakuru", vote: "YES" },
+            { name: "Liza Chelule", constituency: "Nakuru County", county: "Nakuru", vote: "YES" },
+            { name: "David Gikaria", constituency: "Nakuru Town East", county: "Nakuru", vote: "YES" },
+            { name: "Samuel Arama", constituency: "Nakuru Town West", county: "Nakuru", vote: "YES" },
+            { name: "Godfrey Mulanya", constituency: "Nambale", county: "Busia", vote: "NO" },
+            { name: "Cynthia Muge", constituency: "Nandi County", county: "Nandi", vote: "YES" },
+            { name: "Bernard Kitur", constituency: "Nandi Hills", county: "Nandi", vote: "ABSENT" },
+            { name: "Rebecca Tonkei", constituency: "Narok County", county: "Narok", vote: "YES" },
+            { name: "Lemanken Aramat", constituency: "Narok East", county: "Narok", vote: "YES" },
+            { name: "Gabriel Tongoyo", constituency: "Narok West", county: "Narok", vote: "YES" },
+            { name: "Emmanuel Wangwe", constituency: "Navakholo", county: "Kakamega", vote: "YES" },
+            { name: "George Gachagua", constituency: "Ndaragwa", county: "Nyandarua", vote: "YES" },
+            { name: "Martin Peters Owino", constituency: "Ndhiwa", county: "Homa Bay", vote: "NO" },
+            { name: "GK Kariuki", constituency: "Ndia", county: "Kirinyaga", vote: "YES" },
+            { name: "Charity Kathambi", constituency: "Njoro", county: "Nakuru", vote: "YES" },
+            { name: "Guyo Adhe", constituency: "North Horr", county: "Marsabit", vote: "YES" },
+            { name: "Rahim Dawood", constituency: "North Imenti", county: "Meru", vote: "YES" },
+            { name: "Joash Nyamoko", constituency: "North Mugirango", county: "Nyamira", vote: "YES" },
+            { name: "Aduma Owuor", constituency: "Nyakach", county: "Kisumu", vote: "NO" },
+            { name: "Mohamed Ali", constituency: "Nyali", county: "Mombasa", vote: "ABSENT" },
+            { name: "Jerusha Momanyi", constituency: "Nyamira County", county: "Nyamira", vote: "YES" },
+            { name: "Faith Gitau", constituency: "Nyandarua County", county: "Nyandarua", vote: "YES" },
+            { name: "Jared Okelo", constituency: "Nyando", county: "Kisumu", vote: "NO" },
+            { name: "Zaheer Jhanda", constituency: "Nyaribari Chache", county: "Kisii", vote: "YES" },
+            { name: "Daniel Manduku", constituency: "Nyaribari Masaba", county: "Kisii", vote: "NO" },
+            { name: "Tom Mboya Odege", constituency: "Nyatike", county: "Migori", vote: "NO" },
+            { name: "Rahab Mukami", constituency: "Nyeri County", county: "Nyeri", vote: "YES" },
+            { name: "Duncan Mathenge", constituency: "Nyeri Town", county: "Nyeri", vote: "YES" },
+            { name: "Michael Muchira", constituency: "Othaya", county: "Nyeri", vote: "YES" },
+            { name: "David Kiaraho", constituency: "Ol Kalou", county: "Nyandarua", vote: "YES" },
+            { name: "Michael Wainaina", constituency: "Ol Joro Orok", county: "Nyandarua", vote: "YES" },
+            { name: "David Pkosing", constituency: "Pokot South", county: "West Pokot", vote: "YES" },
+            { name: "Antony Kenga", constituency: "Rabai", county: "Kilifi", vote: "NO" },
+            { name: "Lilian Gogo", constituency: "Rangwe", county: "Homa Bay", vote: "NO" },
+            { name: "Otiende Amolo", constituency: "Rarieda", county: "Siaya", vote: "NO" },
+            { name: "Kibet Jebor", constituency: "Rongai", county: "Nakuru", vote: "YES" },
+            { name: "Paul Abuor", constituency: "Rongo", county: "Migori", vote: "NO" },
+            { name: "Mwafrika Kamande", constituency: "Roysambu", county: "Nairobi", vote: "YES" },
+            { name: "TJ Kajwang", constituency: "Ruaraka", county: "Nairobi", vote: "NO" },
+            { name: "Simon Kingara", constituency: "Ruiru", county: "Kiambu", vote: "YES" },
+            { name: "Eric Karemba", constituency: "Runyenjes", county: "Embu", vote: "YES" },
+            { name: "Clement Sloya", constituency: "Sabatia", county: "Vihiga", vote: "ABSENT" },
+            { name: "Caleb Amisi", constituency: "Saboti", county: "Trans Nzoia", vote: "NO" },
+            { name: "Dido Rasso", constituency: "Saku", county: "Marsabit", vote: "YES" },
+            { name: "Pauline Lenguris", constituency: "Samburu County", county: "Samburu", vote: "YES" },
+            { name: "Jackson Lekumontare", constituency: "Samburu East", county: "Samburu", vote: "YES" },
+            { name: "Dominic Letipila", constituency: "Samburu North", county: "Samburu", vote: "YES" },
+            { name: "Naisula Lesuuda", constituency: "Samburu West", county: "Samburu", vote: "NO" },
+            { name: "James Nyikal", constituency: "Seme", county: "Kisumu", vote: "NO" },
+            { name: "Fredrick Ikana", constituency: "Shinyalu", county: "Kakamega", vote: "YES" },
+            { name: "Christine Ombaka", constituency: "Siaya County", county: "Siaya", vote: "NO" },
+            { name: "Peter Lochakapong", constituency: "Sigor", county: "West Pokot", vote: "YES" },
+            { name: "Justice Kemei", constituency: "Sigowet/Soin", county: "Kericho", vote: "YES" },
+            { name: "John Waluke", constituency: "Sirisia", county: "Bungoma", vote: "YES" },
+            { name: "Francis Sigei", constituency: "Sotik", county: "Bomet", vote: "YES" },
+            { name: "Shadrack Mwiti", constituency: "South Imenti", county: "Meru", vote: "ABSENT" },
+            { name: "Silvanus Osoro", constituency: "South Mugirango", county: "Kisii", vote: "YES" },
+            { name: "David Kiplagat", constituency: "Soy", county: "Uasin Gishu", vote: "YES" },
+            { name: "Amos Mwago", constituency: "Starehe", county: "Nairobi", vote: "NO" },
+            { name: "Millie Odhiambo", constituency: "Suba North", county: "Homa Bay", vote: "NO" },
+            { name: "Caroli Omondi", constituency: "Suba South", county: "Homa Bay", vote: "YES" },
+            { name: "Samuel Gachobe", constituency: "Subukia", county: "Nakuru", vote: "YES" },
+            { name: "Junet Mohamed", constituency: "Suna East", county: "Migori", vote: "NO" },
+            { name: "Francis Masara", constituency: "Suna West", county: "Migori", vote: "NO" },
+            { name: "Amina Dika", constituency: "Tana River County", county: "Tana River", vote: "YES" },
+            { name: "Bare Hussein Abdi", constituency: "Tarbaj", county: "Wajir", vote: "YES" },
+            { name: "John Bwire", constituency: "Taveta", county: "Taita Taveta", vote: "YES" },
+            { name: "Oku Kaunya", constituency: "Teso North", county: "Busia", vote: "NO" },
+            { name: "Mary Emaase", constituency: "Teso South", county: "Busia", vote: "YES" },
+            { name: "Geoffrey Wandeto", constituency: "Tetu", county: "Nyeri", vote: "ABSENT" },
+            { name: "George Murugara", constituency: "Tharaka", county: "Tharaka Nithi", vote: "YES" },
+            { name: "Susan Ngugi", constituency: "Tharaka Nithi County", county: "Tharaka Nithi", vote: "ABSENT" },
+            { name: "Alice Ng’ang’a", constituency: "Thika Town", county: "Kiambu", vote: "YES" },
+            { name: "William Kamket", constituency: "Tiaty", county: "Baringo", vote: "YES" },
+            { name: "Mpuru Aburi", constituency: "Tigania East", county: "Meru", vote: "YES" },
+            { name: "John Mutunga", constituency: "Tigania West", county: "Meru", vote: "YES" },
+            { name: "Julius Melly", constituency: "Tinderet", county: "Nandi", vote: "YES" },
+            { name: "John Chikati", constituency: "Tongaren", county: "Bungoma", vote: "YES" },
+            { name: "Lilian Siyoi", constituency: "Trans Nzoia County", county: "Trans Nzoia", vote: "YES" },
+            { name: "Janet Sitienei", constituency: "Turbo", county: "Uasin Gishu", vote: "YES" },
+            { name: "Cecilia Ngitit", constituency: "Turkana County", county: "Turkana", vote: "ABSENT" },
+            { name: "Joseph Namuar", constituency: "Turkana Central", county: "Turkana", vote: "YES" },
+            { name: "Paul Ekuom Nabuin", constituency: "Turkana North", county: "Turkana", vote: "NO" },
+            { name: "John Ariko", constituency: "Turkana South", county: "Turkana", vote: "NO" },
+            { name: "Daniel Nanok", constituency: "Turkana West", county: "Turkana", vote: "YES" },
+            { name: "Gladys Shollei", constituency: "Uasin Gishu County", county: "Uasin Gishu", vote: "YES" },
+            { name: "David Ochieng", constituency: "Ugenya", county: "Siaya", vote: "NO" },
+            { name: "James Wandayi", constituency: "Ugunja", county: "Siaya", vote: "NO" },
+            { name: "Mark Nyamita", constituency: "Uriri", county: "Migori", vote: "NO" },
+            { name: "Ernest Kivai Kagesi", constituency: "Vihiga", county: "Vihiga", vote: "YES" },
+            { name: "Beatrice Adagala", constituency: "Vihiga County", county: "Vihiga", vote: "YES" },
+            { name: "Adow Mohamed", constituency: "Wajir South", county: "Wajir", vote: "YES" },
+            { name: "Farah Yusuf Mohamed", constituency: "Wajir West", county: "Wajir", vote: "NO" },
+            { name: "Martin Pepela", constituency: "Webuye East", county: "Bungoma", vote: "YES" },
+            { name: "Abdi Daudi Mohamed", constituency: "Wajir North", county: "Wajir", vote: "ABSENT" },
+            { name: "Daniel Wanyama", constituency: "Webuye West", county: "Bungoma", vote: "YES" },
+            { name: "Stephen Mogaka", constituency: "West Mugirango", county: "Nyamira", vote: "NO" },
+            { name: "Rael Chepkemoi", constituency: "West Pokot County", county: "West Pokot", vote: "YES" },
+            { name: "Timothy Wanyonyi", constituency: "Westlands", county: "Nairobi", vote: "NO" },
+            { name: "Mwakuwona Danson", constituency: "Mwatate", county: "Taita Taveta", vote: "NO" },
+            { name: "Basil Robert", constituency: "Yatta", county: "Machakos", vote: "NO" },
+            { name: "Abdisirat Khalif", constituency: "Nominated", county: "National Assembly", vote: "YES" },
+            { name: "Sabina Chege", constituency: "Nominated", county: "National Assembly", vote: "ABSENT" },
+            { name: "Joseph Hamisi", constituency: "Nominated", county: "National Assembly", vote: "YES" },
+            { name: "Harun Suleka", constituency: "Nominated", county: "National Assembly", vote: "YES" },
+            { name: "Ikiara Dorothy", constituency: "Nominated", county: "National Assembly", vote: "YES" },
+            { name: "Iraya Joseph", constituency: "Nominated", county: "National Assembly", vote: "YES" },
+            { name: "Kosgei Joseph", constituency: "Nominated", county: "National Assembly", vote: "ABSENT" },
+            { name: "Irene Mayaka", constituency: "Nominated", county: "National Assembly", vote: "NO" },
+            { name: "Umul kher Harun", constituency: "Nominated", county: "National Assembly", vote: "NO" },
+            { name: "Teresia Wanjiru Mwangi", constituency: "Nominated", county: "National Assembly", vote: "ABSENT" },
+            { name: "John Mbadi", constituency: "Nominated", county: "National Assembly", vote: "NO" },
+            { name: "Talib Abubakar Ahmed", constituency: "Nominated", county: "National Assembly", vote: "YES" }
+        ];
+
+        const searchInput = document.getElementById('search-input');
+        const appWrapper = document.getElementById('app-wrapper');
+        const glowField = document.getElementById('glow-field');
+        const outputView = document.getElementById('output-view');
+        
+        const voteDecision = document.getElementById('vote-decision');
+        const mpName = document.getElementById('mp-name');
+        const mpLocation = document.getElementById('mp-location');
+        const badgeDot = document.getElementById('badge-dot');
+        const badgeLabel = document.getElementById('badge-label');
+        const statusBadge = document.getElementById('status-badge');
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+
+            if (query === "") {
+                bodyStyleReset();
+                outputView.classList.add('opacity-0', 'translate-y-6');
+                return;
+            }
+
+            // High-speed array character scanning function
+            const match = parliamentaryRecords.find(record => 
+                (record.constituency && record.constituency.toLowerCase().includes(query)) || 
+                (record.name && record.name.toLowerCase().includes(query)) ||
+                (record.county && record.county.toLowerCase().includes(query))
+            );
+
+            outputView.classList.remove('opacity-0', 'translate-y-6');
+
+            if (match) {
+                mpName.textContent = match.name;
+                mpLocation.textContent = `${match.constituency} — ${match.county}`;
+
+                if (match.vote === "YES") {
+                    voteDecision.textContent = "Voted Yes";
+                    voteDecision.className = "text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none text-red-500 drop-shadow-[0_0_35px_rgba(239,68,68,0.2)]";
+                    
+                    badgeDot.className = "w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]";
+                    badgeLabel.textContent = "Confirmed Yes Vote";
+                    statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-red-950/30 border border-red-900/40 text-red-400";
+                    
+                    appWrapper.style.backgroundColor = "#0d0202";
+                    glowField.className = "ambient-glow glow-yes";
+                    
+                } else if (match.vote === "NO") {
+                    voteDecision.textContent = "Voted No";
+                    voteDecision.className = "text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none text-emerald-400 drop-shadow-[0_0_35px_rgba(52,211,153,0.2)]";
+                    
+                    badgeDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
+                    badgeLabel.textContent = "Confirmed No Vote";
+                    statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-emerald-950/30 border border-emerald-900/40 text-emerald-400";
+                    
+                    appWrapper.style.backgroundColor = "#010b06";
+                    glowField.className = "ambient-glow glow-no";
+                } else if (match.vote === "ABSENT") {
+                    voteDecision.textContent = "Absent";
+                    voteDecision.className = "text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none text-amber-500 drop-shadow-[0_0_35px_rgba(245,158,11,0.2)]";
+                    
+                    badgeDot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]";
+                    badgeLabel.textContent = "Recorded Absent";
+                    statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-amber-950/30 border border-amber-900/40 text-amber-400";
+                    
+                    appWrapper.style.backgroundColor = "#0c0701";
+                    glowField.className = "ambient-glow glow-absent";
+                }
+            } else {
+                voteDecision.textContent = "Scanning...";
+                voteDecision.className = "text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none text-zinc-700";
+                mpName.textContent = "Searching Internal Records";
+                mpLocation.textContent = "Reviewing local memory matrix array...";
+                
+                badgeDot.className = "w-1.5 h-1.5 rounded-full bg-zinc-600 animate-pulse";
+                badgeLabel.textContent = "Query Active";
+                statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-zinc-900 border border-zinc-800 text-zinc-500";
+                
+                appWrapper.style.backgroundColor = "#050506";
+                glowField.className = "ambient-glow glow-scanning";
+            }
+        });
+
+        function bodyStyleReset() {
+            appWrapper.style.backgroundColor = "#030303";
+            glowField.className = "ambient-glow glow-default";
+            statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-zinc-900 border border-zinc-800 text-zinc-400";
+            badgeDot.className = "w-1.5 h-1.5 rounded-full bg-zinc-500";
+            badgeLabel.textContent = "System Dormant";
+        }
+    </script>
+</body>
+</html>
