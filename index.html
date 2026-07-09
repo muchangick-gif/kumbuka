@@ -5,114 +5,224 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kumbuka — The Streets Never Forget</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+
     <style>
+        :root { color-scheme: dark; }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #030303;
-            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            background-color: #0a0908;
+            transition: background-color 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        
-        /* Premium Background Ambient Glow Element */
+
+        .font-display { font-family: 'Big Shoulders Display', 'Plus Jakarta Sans', sans-serif; }
+        .font-record { font-family: 'IBM Plex Mono', monospace; }
+
+        /* Archival paper-grain overlay, sits above the flat background color */
+        .grain {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.05;
+            mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
         .ambient-glow {
             position: fixed;
-            top: 50%;
+            top: 40%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 700px;
-            height: 700px;
+            width: 900px;
+            height: 900px;
             z-index: 0;
             pointer-events: none;
             transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Glassmorphic User Interface Container */
-        .premium-card {
-            background: rgba(12, 12, 14, 0.6);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border: 1px solid rgba(255, 255, 255, 0.04);
+        .glow-default  { background: radial-gradient(circle, rgba(255,255,255,0.025) 0%, rgba(0,0,0,0) 65%); }
+        .glow-yes      { background: radial-gradient(circle, rgba(220,38,38,0.20) 0%, rgba(220,38,38,0.03) 45%, rgba(0,0,0,0) 68%); }
+        .glow-no       { background: radial-gradient(circle, rgba(16,163,90,0.16) 0%, rgba(16,163,90,0.02) 45%, rgba(0,0,0,0) 68%); }
+        .glow-absent   { background: radial-gradient(circle, rgba(217,155,29,0.12) 0%, rgba(217,155,29,0.02) 45%, rgba(0,0,0,0) 68%); }
+
+        .ledger-card {
+            background: rgba(16, 15, 13, 0.65);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8);
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        .ledger-card:focus-within {
+            border-color: rgba(255, 255, 255, 0.14);
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.03);
+        }
+        input:focus { outline: none; }
 
-        .premium-card:focus-within {
-            border-color: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.02);
-            transform: scale(1.01);
+        /* Rubber-stamp frame used on the status badge for a struck-record look */
+        .stamp-frame {
+            position: relative;
+            border-width: 1.5px;
+            border-style: solid;
+        }
+        .stamp-frame::after {
+            content: "";
+            position: absolute;
+            inset: -4px;
+            border: 1px solid currentColor;
+            opacity: 0.35;
+            border-radius: inherit;
+            transform: rotate(1.2deg);
+            pointer-events: none;
         }
 
-        input:focus {
-            outline: none;
+        .verdict-word {
+            font-family: 'Big Shoulders Display', sans-serif;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 0.85;
+        }
+        .verdict-yes {
+            color: #ef4444;
+            transform: rotate(-2.5deg);
+            text-shadow: 3px 3px 0 rgba(220,38,38,0.35), -1px -1px 0 rgba(220,38,38,0.15);
+            animation: stampImpact 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .verdict-no {
+            color: #34d399;
+            animation: verdictRise 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .verdict-absent {
+            color: #d99b1d;
+            opacity: 0.92;
+            animation: verdictRise 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Ambient Light Color Interpolations */
-        .glow-default { background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 70%); }
-        .glow-yes { background: radial-gradient(circle, rgba(239,68,68,0.14) 0%, rgba(239,68,68,0.02) 45%, rgba(0,0,0,0) 70%); }
-        .glow-no { background: radial-gradient(circle, rgba(16,185,129,0.14) 0%, rgba(16,185,129,0.02) 45%, rgba(0,0,0,0) 70%); }
-        .glow-absent { background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, rgba(0,0,0,0) 70%); }
-        .glow-scanning { background: radial-gradient(circle, rgba(39,39,42,0.1) 0%, rgba(0,0,0,0) 70%); }
+        @keyframes stampImpact {
+            0%   { transform: scale(1.2) rotate(-7deg); opacity: 0; }
+            55%  { transform: scale(0.96) rotate(-1deg); opacity: 1; }
+            100% { transform: scale(1) rotate(-2.5deg); opacity: 1; }
+        }
+        @keyframes verdictRise {
+            0%   { transform: translateY(10px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .flash-yes { animation: flashRed 0.45s ease-out; }
+        @keyframes flashRed {
+            0%   { background-color: rgba(220,38,38,0.22); }
+            100% { background-color: transparent; }
+        }
+
+        /* Result list row */
+        .record-row {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background-color 0.15s ease;
+            cursor: pointer;
+        }
+        .record-row:hover, .record-row:focus-visible { background-color: rgba(255,255,255,0.035); }
+        .record-row:last-child { border-bottom: none; }
+
+        #results-list::-webkit-scrollbar { width: 6px; }
+        #results-list::-webkit-scrollbar-track { background: transparent; }
+        #results-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+        .fade-slide {
+            transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1);
+        }
     </style>
 </head>
-<body id="app-wrapper" class="text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-white/10 overflow-hidden relative">
+<body id="app-wrapper" class="text-zinc-100 min-h-screen flex flex-col justify-between selection:bg-red-500/20 relative">
 
+    <div class="grain"></div>
     <div id="glow-field" class="ambient-glow glow-default"></div>
 
-    <header class="w-full max-w-7xl mx-auto px-8 py-8 flex justify-between items-center z-10 opacity-30 hover:opacity-80 transition-opacity duration-300">
-        <div class="text-[10px] font-mono tracking-[0.4em] uppercase text-zinc-400">Kumbuka Archive</div>
-        <div class="text-[10px] font-mono tracking-[0.4em] uppercase text-zinc-400">Pristine Local Data Engine</div>
+    <header class="w-full max-w-7xl mx-auto px-6 sm:px-8 py-8 flex justify-between items-center z-10 gap-4">
+        <div class="font-record text-[10px] tracking-[0.35em] uppercase text-zinc-500">Kumbuka Archive</div>
+        <div id="tally-line" class="font-record text-[10px] tracking-[0.2em] uppercase text-zinc-500 text-right"></div>
     </header>
 
-    <main class="w-full max-w-2xl mx-auto px-6 py-12 flex-grow flex flex-col justify-center z-10">
-        
-        <div class="text-center mb-12">
-            <h1 class="text-5xl font-black tracking-tight mb-4 bg-gradient-to-b from-white via-zinc-200 to-zinc-600 bg-clip-text text-transparent uppercase">
+    <main class="w-full max-w-2xl mx-auto px-6 py-8 flex-grow flex flex-col justify-center z-10">
+
+        <div class="text-center mb-10">
+            <h1 class="font-display text-5xl sm:text-6xl font-black tracking-tight mb-3 bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent uppercase">
                 The Streets Never Forget.
             </h1>
-            <p class="text-zinc-500 text-xs tracking-widest uppercase font-mono">
-                Public Accountability Index • Finance Bill Record
+            <p class="text-zinc-500 text-xs tracking-widest uppercase font-record">
+                Public Accountability Index · Finance Bill Division Record
             </p>
         </div>
 
-        <div class="premium-card rounded-2xl p-1.5 mb-16">
-            <input 
-                type="text" 
-                id="search-input" 
+        <div class="ledger-card rounded-2xl p-1.5 mb-3">
+            <input
+                type="text"
+                id="search-input"
                 autocomplete="off"
-                placeholder="Enter Constituency, County or MP Name..." 
-                class="w-full px-6 py-5 rounded-xl bg-zinc-900/40 text-white placeholder-zinc-700 text-xl font-medium tracking-wide border border-transparent"
+                spellcheck="false"
+                placeholder="Name, constituency, county — or try &lsquo;yes votes in Nakuru&rsquo;"
+                class="w-full px-6 py-5 rounded-xl bg-black/20 text-white placeholder-zinc-600 text-lg sm:text-xl font-medium tracking-wide border border-transparent"
             >
         </div>
+        <p class="text-center text-zinc-600 text-[10px] font-record tracking-[0.15em] uppercase mb-10">
+            Fuzzy name search · plain-language filters · full division roll call
+        </p>
 
-        <div id="output-view" class="text-center opacity-0 transform translate-y-6 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none">
-            
-            <div id="status-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-zinc-900 border border-zinc-800 text-zinc-400">
+        <!-- Idle state -->
+        <div id="idle-state" class="text-center fade-slide opacity-100">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-record uppercase tracking-[0.2em] bg-zinc-900/60 border border-zinc-800 text-zinc-500">
+                <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                Awaiting Query
+            </div>
+        </div>
+
+        <!-- Results list (multiple matches) -->
+        <div id="results-panel" class="fade-slide opacity-0 translate-y-4 pointer-events-none hidden">
+            <div id="results-meta" class="text-center font-record text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-3"></div>
+            <div id="results-list" class="ledger-card rounded-2xl max-h-[52vh] overflow-y-auto divide-y divide-white/5"></div>
+        </div>
+
+        <!-- Hero verdict (single match) -->
+        <div id="hero-panel" class="text-center fade-slide opacity-0 translate-y-4 pointer-events-none hidden">
+            <button id="back-to-list" class="hidden mb-4 font-record text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-300 transition-colors">&larr; Back to results</button>
+
+            <div id="status-badge" class="stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-zinc-900/60 border-zinc-800 text-zinc-400">
                 <span id="badge-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
-                <span id="badge-label">System Idle</span>
+                <span id="badge-label">Confirmed</span>
             </div>
-            
-            <h2 id="vote-decision" class="text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none"></h2>
-            
-            <div class="mt-4">
-                <p id="mp-name" class="text-3xl font-extrabold tracking-tight text-white"></p>
-                <p id="mp-location" class="text-xs font-mono tracking-[0.2em] text-zinc-500 uppercase mt-2"></p>
+
+            <h2 id="vote-decision" class="verdict-word text-7xl sm:text-8xl uppercase mb-6"></h2>
+
+            <div class="mt-2">
+                <p id="mp-name" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white"></p>
+                <p id="mp-location" class="text-xs font-record tracking-[0.2em] text-zinc-500 uppercase mt-2"></p>
+                <p id="mp-subtext" class="text-sm text-zinc-500 mt-4 max-w-sm mx-auto"></p>
             </div>
+        </div>
+
+        <!-- No matches -->
+        <div id="empty-state" class="text-center fade-slide opacity-0 translate-y-4 pointer-events-none hidden">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-record uppercase tracking-[0.2em] bg-zinc-900/60 border border-zinc-800 text-zinc-500 mb-4">
+                <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                No Record Found
+            </div>
+            <p class="text-zinc-600 text-sm">No MP, constituency or county matches that query.</p>
         </div>
 
     </main>
 
-    <footer class="w-full max-w-7xl mx-auto px-8 py-8 text-center text-[9px] font-mono tracking-[0.3em] text-zinc-700 uppercase z-10">
-        Decentralised Public Record Ledger • Sourced via Cross-Verified Division Roll Call
+    <footer class="w-full max-w-7xl mx-auto px-8 py-8 text-center text-[9px] font-record tracking-[0.3em] text-zinc-700 uppercase z-10">
+        Public Record Ledger · Sourced via Cross-Verified Division Roll Call
     </footer>
 
     <script>
-        // Complete Cleaned Local Database Array Matrix
+        // Parliamentary division record — deduplicated 2026-07-09 (5 duplicate/artifact rows removed)
         const parliamentaryRecords = [
             { name: "Samuel Chepkonga", constituency: "Ainabkoi", county: "Uasin Gishu", vote: "YES" },
-            { name: "Benjamin Kipkirui", constituency: "Kapseret", county: "Uasin Gishu", vote: "YES" },
             { name: "Marianne Kitany", constituency: "Aldai", county: "Nandi", vote: "YES" },
             { name: "Samuel Atandi", constituency: "Alego Usonga", county: "Siaya", vote: "NO" },
             { name: "John Walter Owino", constituency: "Awendo", county: "Migori", vote: "NO" },
@@ -167,7 +277,6 @@
             { name: "Baro Dekow", constituency: "Garissa Township", county: "Garissa", vote: "YES" },
             { name: "Guyo Ali Wario", constituency: "Garsen", county: "Tana River", vote: "YES" },
             { name: "Edward Wakili", constituency: "Gatundu North", county: "Kiambu", vote: "YES" },
-            { name: "Kururia Njoroge", constituency: "Gatundu North Tracker", county: "Kiambu", vote: "YES" },
             { name: "Gabriel Kagombe", constituency: "Gatundu South", county: "Kiambu", vote: "YES" },
             { name: "Elisha Odhiambo", constituency: "Gem", county: "Siaya", vote: "NO" },
             { name: "Robert Gichimu", constituency: "Gichugu", county: "Kirinyaga", vote: "YES" },
@@ -249,7 +358,6 @@
             { name: "Rachael Nyamai", constituency: "Kitui South", county: "Kitui", vote: "YES" },
             { name: "Edith Nyenze", constituency: "Kitui West", county: "Kitui", vote: "NO" },
             { name: "Japheth Nyakundi", constituency: "Kitutu Chache North", county: "Kisii", vote: "YES" },
-            { name: "Kibagendi Anthony", constituency: "Kitutu Chache South Matrix", county: "Kisii", vote: "NO" },
             { name: "Clive Gisairo", constituency: "Kitutu Masaba", county: "Nyamira", vote: "NO" },
             { name: "Alfred Mutai", constituency: "Kuresoi North", county: "Nakuru", vote: "YES" },
             { name: "Joseph Tonui", constituency: "Kuresoi South", county: "Nakuru", vote: "YES" },
@@ -285,7 +393,6 @@
             { name: "Malulu Injendi", constituency: "Malava", county: "Kakamega", vote: "YES" },
             { name: "Amina Mnyazi", constituency: "Malindi", county: "Kilifi", vote: "NO" },
             { name: "Sheikh Bashir Abdullahi", constituency: "Mandera County", county: "Mandera", vote: "YES" },
-            { name: "Umul kher Kassim", constituency: "Mandera County Option", county: "Mandera", vote: "YES" },
             { name: "Husseinweytan Mohamed", constituency: "Mandera East", county: "Mandera", vote: "NO" },
             { name: "Abdul Haro Ibrahim", constituency: "Mandera South", county: "Mandera", vote: "YES" },
             { name: "Yusuf Adan Haji", constituency: "Mandera West", county: "Mandera", vote: "YES" },
@@ -323,7 +430,6 @@
             { name: "Mary Maingi", constituency: "Mwea", county: "Kirinyaga", vote: "YES" },
             { name: "Gideon Mulyungi", constituency: "Mwingi Central", county: "Kitui", vote: "NO" },
             { name: "Paul Nzengu", constituency: "Mwingi West", county: "Kitui", vote: "NO" },
-            { name: "Charles Nguna", constituency: "Mwingi West Alt", county: "Kitui", vote: "NO" },
             { name: "Esther Passaris", constituency: "Nairobi County", county: "Nairobi", vote: "NO" },
             { name: "Jayne Kihara", constituency: "Naivasha", county: "Nakuru", vote: "YES" },
             { name: "Liza Chelule", constituency: "Nakuru County", county: "Nakuru", vote: "YES" },
@@ -440,94 +546,240 @@
             { name: "Talib Abubakar Ahmed", constituency: "Nominated", county: "National Assembly", vote: "YES" }
         ];
 
-        const searchInput = document.getElementById('search-input');
-        const appWrapper = document.getElementById('app-wrapper');
-        const glowField = document.getElementById('glow-field');
-        const outputView = document.getElementById('output-view');
-        
-        const voteDecision = document.getElementById('vote-decision');
-        const mpName = document.getElementById('mp-name');
-        const mpLocation = document.getElementById('mp-location');
-        const badgeDot = document.getElementById('badge-dot');
-        const badgeLabel = document.getElementById('badge-label');
-        const statusBadge = document.getElementById('status-badge');
+        // ---- Query intelligence: vote-intent + county detection + fuzzy fallback ----
 
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase().trim();
+        const VOTE_PATTERNS = [
+            { value: "ABSENT", regex: /\babsent(ee)?\b|\bmissing\b|\bskip(ped)?\b|\bno[- ]?show\b|\bdidn'?t\s+vote\b/i },
+            { value: "YES",    regex: /\byes\b|\bsupport(ed|ers?)?\b|\bpro[- ]?bill\b/i },
+            { value: "NO",     regex: /\bno\b|\bagainst\b|\boppos(e|ed|ition)\b|\breject(ed)?\b/i }
+        ];
 
-            if (query === "") {
-                bodyStyleReset();
-                outputView.classList.add('opacity-0', 'translate-y-6');
-                return;
+        const KNOWN_COUNTIES = [...new Set(parliamentaryRecords.map(r => r.county))]
+            .sort((a, b) => b.length - a.length); // longest-first so "Uasin Gishu" wins over any partial overlap
+
+        const STOPWORDS = /\b(who|voted|voting|votes|vote|mp|mps|member|members|in|on|at|the|for|of|show|list|find|search|did|does|is|are|from|county|constituency)\b/gi;
+
+        function parseQuery(raw) {
+            const lower = raw.toLowerCase();
+            let vote = null;
+            for (const p of VOTE_PATTERNS) {
+                if (p.regex.test(lower)) { vote = p.value; break; }
             }
 
-            // High-speed array character scanning function
-            const match = parliamentaryRecords.find(record => 
-                (record.constituency && record.constituency.toLowerCase().includes(query)) || 
-                (record.name && record.name.toLowerCase().includes(query)) ||
-                (record.county && record.county.toLowerCase().includes(query))
-            );
-
-            outputView.classList.remove('opacity-0', 'translate-y-6');
-
-            if (match) {
-                mpName.textContent = match.name;
-                mpLocation.textContent = `${match.constituency} — ${match.county}`;
-
-                if (match.vote === "YES") {
-                    voteDecision.textContent = "Voted Yes";
-                    voteDecision.className = "text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none text-red-500 drop-shadow-[0_0_35px_rgba(239,68,68,0.2)]";
-                    
-                    badgeDot.className = "w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]";
-                    badgeLabel.textContent = "Confirmed Yes Vote";
-                    statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-red-950/30 border border-red-900/40 text-red-400";
-                    
-                    appWrapper.style.backgroundColor = "#0d0202";
-                    glowField.className = "ambient-glow glow-yes";
-                    
-                } else if (match.vote === "NO") {
-                    voteDecision.textContent = "Voted No";
-                    voteDecision.className = "text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none text-emerald-400 drop-shadow-[0_0_35px_rgba(52,211,153,0.2)]";
-                    
-                    badgeDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
-                    badgeLabel.textContent = "Confirmed No Vote";
-                    statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-emerald-950/30 border border-emerald-900/40 text-emerald-400";
-                    
-                    appWrapper.style.backgroundColor = "#010b06";
-                    glowField.className = "ambient-glow glow-no";
-                } else if (match.vote === "ABSENT") {
-                    voteDecision.textContent = "Absent";
-                    voteDecision.className = "text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none text-amber-500 drop-shadow-[0_0_35px_rgba(245,158,11,0.2)]";
-                    
-                    badgeDot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]";
-                    badgeLabel.textContent = "Recorded Absent";
-                    statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-amber-950/30 border border-amber-900/40 text-amber-400";
-                    
-                    appWrapper.style.backgroundColor = "#0c0701";
-                    glowField.className = "ambient-glow glow-absent";
-                }
-            } else {
-                voteDecision.textContent = "Scanning...";
-                voteDecision.className = "text-7xl sm:text-8xl font-black tracking-tighter uppercase mb-6 leading-none text-zinc-700";
-                mpName.textContent = "Searching Internal Records";
-                mpLocation.textContent = "Reviewing local memory matrix array...";
-                
-                badgeDot.className = "w-1.5 h-1.5 rounded-full bg-zinc-600 animate-pulse";
-                badgeLabel.textContent = "Query Active";
-                statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-zinc-900 border border-zinc-800 text-zinc-500";
-                
-                appWrapper.style.backgroundColor = "#050506";
-                glowField.className = "ambient-glow glow-scanning";
+            let county = null;
+            for (const c of KNOWN_COUNTIES) {
+                if (lower.includes(c.toLowerCase())) { county = c; break; }
             }
+
+            let remainder = lower;
+            if (vote) remainder = remainder.replace(VOTE_PATTERNS.find(p => p.value === vote).regex, " ");
+            if (county) remainder = remainder.replace(new RegExp(county.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
+            remainder = remainder.replace(STOPWORDS, " ").replace(/\s+/g, " ").trim();
+
+            return { vote, county, remainder };
+        }
+
+        const fuse = new Fuse(parliamentaryRecords, {
+            keys: [
+                { name: "name", weight: 0.5 },
+                { name: "constituency", weight: 0.3 },
+                { name: "county", weight: 0.2 }
+            ],
+            threshold: 0.36,
+            ignoreLocation: true,
+            includeScore: true
         });
 
-        function bodyStyleReset() {
-            appWrapper.style.backgroundColor = "#030303";
-            glowField.className = "ambient-glow glow-default";
-            statusBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-[0.2em] mb-8 bg-zinc-900 border border-zinc-800 text-zinc-400";
-            badgeDot.className = "w-1.5 h-1.5 rounded-full bg-zinc-500";
-            badgeLabel.textContent = "System Dormant";
+        const MAX_LIST_ROWS = 60;
+
+        // ---- DOM refs ----
+        const searchInput   = document.getElementById('search-input');
+        const appWrapper    = document.getElementById('app-wrapper');
+        const glowField     = document.getElementById('glow-field');
+        const tallyLine      = document.getElementById('tally-line');
+
+        const idleState      = document.getElementById('idle-state');
+        const resultsPanel   = document.getElementById('results-panel');
+        const resultsMeta    = document.getElementById('results-meta');
+        const resultsList    = document.getElementById('results-list');
+        const heroPanel       = document.getElementById('hero-panel');
+        const emptyState      = document.getElementById('empty-state');
+        const backToListBtn   = document.getElementById('back-to-list');
+
+        const voteDecision = document.getElementById('vote-decision');
+        const mpName        = document.getElementById('mp-name');
+        const mpLocation    = document.getElementById('mp-location');
+        const mpSubtext     = document.getElementById('mp-subtext');
+        const badgeDot       = document.getElementById('badge-dot');
+        const badgeLabel     = document.getElementById('badge-label');
+        const statusBadge    = document.getElementById('status-badge');
+
+        // ---- Header tally ----
+        (function renderTally() {
+            const counts = parliamentaryRecords.reduce((acc, r) => { acc[r.vote] = (acc[r.vote] || 0) + 1; return acc; }, {});
+            tallyLine.textContent = `${parliamentaryRecords.length} MPs Tracked — ${counts.YES || 0} Yes · ${counts.NO || 0} No · ${counts.ABSENT || 0} Absent`;
+        })();
+
+        let lastResultSet = [];
+
+        function showOnly(panel) {
+            [idleState, resultsPanel, heroPanel, emptyState].forEach(p => {
+                const isTarget = p === panel;
+                p.classList.toggle('opacity-0', !isTarget);
+                p.classList.toggle('translate-y-4', !isTarget);
+                p.classList.toggle('pointer-events-none', !isTarget);
+                p.classList.toggle('hidden', !isTarget);
+            });
         }
+
+        function voteBadgeClasses(vote) {
+            if (vote === "YES") return "text-red-400";
+            if (vote === "NO") return "text-emerald-400";
+            return "text-amber-400";
+        }
+
+        function renderList(records, metaLabel) {
+            lastResultSet = records;
+            resultsMeta.textContent = metaLabel;
+            resultsList.innerHTML = "";
+
+            const shown = records.slice(0, MAX_LIST_ROWS);
+            shown.forEach(record => {
+                const row = document.createElement('div');
+                row.className = "record-row flex items-center justify-between gap-4 px-5 py-3.5 text-left";
+                row.tabIndex = 0;
+
+                const left = document.createElement('div');
+                const nameEl = document.createElement('p');
+                nameEl.className = "text-sm font-semibold text-zinc-100";
+                nameEl.textContent = record.name;
+                const locEl = document.createElement('p');
+                locEl.className = "text-[11px] font-record text-zinc-500 uppercase tracking-wide mt-0.5";
+                locEl.textContent = `${record.constituency} — ${record.county}`;
+                left.appendChild(nameEl);
+                left.appendChild(locEl);
+
+                const badge = document.createElement('span');
+                badge.className = `font-record text-[10px] uppercase tracking-[0.15em] shrink-0 ${voteBadgeClasses(record.vote)}`;
+                badge.textContent = record.vote;
+
+                row.appendChild(left);
+                row.appendChild(badge);
+
+                const select = () => renderHero(record, true);
+                row.addEventListener('click', select);
+                row.addEventListener('keydown', (e) => { if (e.key === 'Enter') select(); });
+
+                resultsList.appendChild(row);
+            });
+
+            if (records.length > MAX_LIST_ROWS) {
+                const more = document.createElement('div');
+                more.className = "px-5 py-3 text-center text-[10px] font-record uppercase tracking-[0.15em] text-zinc-600";
+                more.textContent = `+ ${records.length - MAX_LIST_ROWS} more — refine your search`;
+                resultsList.appendChild(more);
+            }
+
+            showOnly(resultsPanel);
+        }
+
+        function renderHero(record, cameFromList) {
+            backToListBtn.classList.toggle('hidden', !(cameFromList && lastResultSet.length > 1));
+
+            mpName.textContent = record.name;
+            mpLocation.textContent = `${record.constituency} — ${record.county}`;
+
+            if (record.vote === "YES") {
+                voteDecision.textContent = "Voted Yes";
+                voteDecision.className = "verdict-word verdict-yes text-7xl sm:text-8xl uppercase mb-6";
+                mpSubtext.textContent = "This MP voted to pass the Finance Bill.";
+
+                badgeDot.className = "w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]";
+                badgeLabel.textContent = "Confirmed Yes Vote";
+                statusBadge.className = "stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-red-950/30 border-red-800/50 text-red-400";
+
+                appWrapper.style.backgroundColor = "#120302";
+                glowField.className = "ambient-glow glow-yes";
+                appWrapper.classList.remove('flash-yes');
+                void appWrapper.offsetWidth;
+                appWrapper.classList.add('flash-yes');
+
+            } else if (record.vote === "NO") {
+                voteDecision.textContent = "Voted No";
+                voteDecision.className = "verdict-word verdict-no text-7xl sm:text-8xl uppercase mb-6";
+                mpSubtext.textContent = "This MP voted against the Finance Bill.";
+
+                badgeDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
+                badgeLabel.textContent = "Confirmed No Vote";
+                statusBadge.className = "stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-emerald-950/30 border-emerald-800/40 text-emerald-400";
+
+                appWrapper.style.backgroundColor = "#020e08";
+                glowField.className = "ambient-glow glow-no";
+
+            } else {
+                voteDecision.textContent = "Absent";
+                voteDecision.className = "verdict-word verdict-absent text-7xl sm:text-8xl uppercase mb-6";
+                mpSubtext.textContent = "This MP was not recorded present for the division.";
+
+                badgeDot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_#d99b1d]";
+                badgeLabel.textContent = "Recorded Absent";
+                statusBadge.className = "stamp-frame inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-record uppercase tracking-[0.2em] mb-8 bg-amber-950/30 border-amber-800/40 text-amber-400";
+
+                appWrapper.style.backgroundColor = "#100a01";
+                glowField.className = "ambient-glow glow-absent";
+            }
+
+            showOnly(heroPanel);
+        }
+
+        function resetToIdle() {
+            appWrapper.style.backgroundColor = "#0a0908";
+            glowField.className = "ambient-glow glow-default";
+            showOnly(idleState);
+        }
+
+        backToListBtn.addEventListener('click', () => renderList(lastResultSet, resultsMeta.textContent));
+
+        searchInput.addEventListener('input', (e) => {
+            const raw = e.target.value.trim();
+
+            if (raw === "") { resetToIdle(); return; }
+
+            const { vote, county, remainder } = parseQuery(raw);
+            let results;
+            let meta;
+
+            if (vote || county) {
+                let pool = parliamentaryRecords.filter(r =>
+                    (!vote || r.vote === vote) &&
+                    (!county || r.county.toLowerCase() === county.toLowerCase())
+                );
+                if (remainder.length >= 2) {
+                    pool = pool.filter(r =>
+                        r.name.toLowerCase().includes(remainder) ||
+                        r.constituency.toLowerCase().includes(remainder)
+                    );
+                }
+                results = [...pool].sort((a, b) => a.constituency.localeCompare(b.constituency));
+
+                const parts = [];
+                if (vote) parts.push(`Vote: ${vote}`);
+                if (county) parts.push(`County: ${county}`);
+                meta = `${results.length} match${results.length === 1 ? '' : 'es'} — ${parts.join(' · ')}`;
+            } else {
+                results = fuse.search(raw).map(r => r.item);
+                meta = `${results.length} match${results.length === 1 ? '' : 'es'} for "${raw}"`;
+            }
+
+            if (results.length === 0) {
+                showOnly(emptyState);
+            } else if (results.length === 1) {
+                lastResultSet = results;
+                renderHero(results[0], false);
+            } else {
+                renderList(results, meta);
+            }
+        });
     </script>
 </body>
 </html>
