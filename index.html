@@ -58,6 +58,7 @@
         .verdict-yes    { color: #ff453a; }
         .verdict-no     { color: #32d74b; }
         .verdict-absent { color: #ff9f0a; }
+        .verdict-split  { color: #d4d4d8; }
 
         @keyframes verdictRise {
             0%   { transform: translateY(8px); opacity: 0; }
@@ -577,6 +578,73 @@
             showOnly(heroPanel);
         }
 
+        // County verdict card: the county itself is the answer, with a
+        // majority-rule verdict and every member's name tinted by their vote.
+        const MEMBER_NAME_CLASSES = {
+            YES:    "text-red-400/90 hover:text-red-300 underline underline-offset-2 decoration-red-400/30 transition-colors",
+            NO:     "text-emerald-400/90 hover:text-emerald-300 underline underline-offset-2 decoration-emerald-400/30 transition-colors",
+            ABSENT: "text-amber-400/90 hover:text-amber-300 underline underline-offset-2 decoration-amber-400/30 transition-colors"
+        };
+
+        function renderCountyCard(county, records) {
+            const counts = { YES: 0, NO: 0, ABSENT: 0 };
+            records.forEach(r => counts[r.vote]++);
+            const top = Math.max(counts.YES, counts.NO, counts.ABSENT);
+            const winners = ["YES", "NO", "ABSENT"].filter(v => counts[v] === top);
+            const majority = winners.length === 1 ? winners[0] : "SPLIT";
+
+            const isNominated = county === "National Assembly";
+            const who = isNominated ? "the nominated members" : "this county's MPs";
+            mpName.textContent = isNominated ? "Nominated Members" : `${county} County`;
+            mpLocation.textContent = `${records.length} MPs — ` + ["YES", "NO", "ABSENT"]
+                .filter(v => counts[v] > 0)
+                .map(v => `${counts[v]} ${v === "YES" ? "Yes" : v === "NO" ? "No" : "Absent"}`)
+                .join(" · ");
+            mpContext.textContent = "";
+
+            if (majority === "YES") {
+                voteDecision.textContent = "Voted Yes";
+                voteDecision.className = "verdict-word verdict-yes text-7xl sm:text-8xl uppercase mb-5";
+                mpSubtext.textContent = `Most of ${who} voted in favor of the Finance Bill.`;
+                glowField.className = "ambient-glow glow-yes";
+            } else if (majority === "NO") {
+                voteDecision.textContent = "Voted No";
+                voteDecision.className = "verdict-word verdict-no text-7xl sm:text-8xl uppercase mb-5";
+                mpSubtext.textContent = `Most of ${who} voted against the Finance Bill.`;
+                glowField.className = "ambient-glow glow-no";
+            } else if (majority === "ABSENT") {
+                voteDecision.textContent = "Absent";
+                voteDecision.className = "verdict-word verdict-absent text-7xl sm:text-8xl uppercase mb-5";
+                mpSubtext.textContent = `Most of ${who} were not recorded present for the division.`;
+                glowField.className = "ambient-glow glow-absent";
+            } else {
+                voteDecision.textContent = "Split";
+                voteDecision.className = "verdict-word verdict-split text-7xl sm:text-8xl uppercase mb-5";
+                mpSubtext.textContent = isNominated ? "The nominated members split evenly on the Finance Bill." : "This county's MPs split evenly on the Finance Bill.";
+                glowField.className = "ambient-glow glow-default";
+            }
+
+            // Every member, shame list first: YES, then NO, then ABSENT.
+            mpOthers.innerHTML = "";
+            const ordered = ["YES", "NO", "ABSENT"].flatMap(v =>
+                records.filter(r => r.vote === v).sort((a, b) => a.name.localeCompare(b.name))
+            );
+            ordered.forEach((record, i) => {
+                const btn = document.createElement('button');
+                btn.textContent = record.name;
+                btn.className = MEMBER_NAME_CLASSES[record.vote];
+                btn.addEventListener('click', () => {
+                    searchInput.value = record.name;
+                    renderHero(record, "", null);
+                    searchInput.focus();
+                });
+                mpOthers.appendChild(btn);
+                if (i < ordered.length - 1) mpOthers.appendChild(document.createTextNode(", "));
+            });
+
+            showOnly(heroPanel);
+        }
+
         // Soft, inline alternates for filter-mode queries (e.g. a whole county) —
         // deliberately not a list/table, just quiet clickable names in the flow of text.
         function renderOthers(others) {
@@ -631,6 +699,14 @@
                         r.constituency.toLowerCase().includes(remainder)
                     );
                 }
+
+                // A bare county query is answered by the county itself, not an
+                // arbitrary member: majority verdict + full tinted roll call.
+                if (county && !vote && remainder.length < 2 && pool.length > 0) {
+                    renderCountyCard(county, pool);
+                    return;
+                }
+
                 pool = [...pool].sort((a, b) => a.constituency.localeCompare(b.constituency));
                 best = pool[0];
 
