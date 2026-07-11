@@ -533,7 +533,7 @@
             const closeDateLabel = closeDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
             if (daysLeft > 0) {
-                countdownEl.textContent = `${daysLeft} ${daysLeft === 1 ? '' : 's'}`;
+                countdownEl.textContent = `${daysLeft} ${daysLeft === 1 ? '' : ''}`;
                 countdownEl.title = `This archive closes automatically on ${closeDateLabel}.`;
             } else {
                 countdownEl.textContent = "Archive closed";
